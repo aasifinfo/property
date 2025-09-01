@@ -1,113 +1,231 @@
 "use client";
 
-import {
-  ref,
-  uploadBytes,
-  uploadBytesResumable,
-  getDownloadURL,
-  deleteObject,
-  listAll,
-  UploadTask,
-} from "firebase/storage";
-import { storage } from "./firebase";
+import { supabase } from "./supabase";
 
-// Storage paths
-const storagePaths = {
-  userAvatar: (userId: string) => `users/${userId}/avatar`,
-  userFiles: (userId: string, fileName: string) => `users/${userId}/files/${fileName}`,
+// Storage buckets and paths
+const storageBuckets = {
+  avatars: "avatars",
+  userFiles: "user-files",
 };
 
-// Storage operations
+const storagePaths = {
+  userAvatar: (userId: string) => `${userId}/avatar`,
+  userFiles: (userId: string, fileName: string) => `${userId}/${fileName}`,
+};
+
+// Upload progress callback type
+export type UploadProgress = {
+  progress: number;
+  loaded: number;
+  total: number;
+};
+
+// Storage operations using Supabase Storage
 export const storageOperations = {
   // Upload user avatar
   async uploadAvatar(userId: string, file: File): Promise<string> {
     try {
-      const storageRef = ref(storage, storagePaths.userAvatar(userId));
-      const snapshot = await uploadBytes(storageRef, file);
-      const downloadURL = await getDownloadURL(snapshot.ref);
-      return downloadURL;
+      const fileExt = file.name.split('.').pop();
+      const fileName = `avatar.${fileExt}`;
+      const filePath = `${userId}/${fileName}`;
+
+      const { data, error } = await supabase.storage
+        .from(storageBuckets.avatars)
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: true, // Replace existing avatar
+        });
+
+      if (error) {
+        console.error("Error uploading avatar:", error);
+        throw error;
+      }
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from(storageBuckets.avatars)
+        .getPublicUrl(filePath);
+
+      return publicUrl;
     } catch (error) {
       console.error("Error uploading avatar:", error);
       throw error;
     }
   },
 
-  // Upload file with progress tracking
+  // Upload file with progress tracking (simulated for now - Supabase doesn't have built-in progress)
   uploadFileWithProgress(
     userId: string,
     file: File,
-    onProgress?: (progress: number) => void
+    onProgress?: (progress: UploadProgress) => void
   ): {
-    uploadTask: UploadTask;
-    promise: Promise<string>;
+    uploadPromise: Promise<string>;
+    abort: () => void;
   } {
     const fileName = `${Date.now()}_${file.name}`;
-    const storageRef = ref(storage, storagePaths.userFiles(userId, fileName));
-    const uploadTask = uploadBytesResumable(storageRef, file);
-
-    const promise = new Promise<string>((resolve, reject) => {
-      uploadTask.on(
-        "state_changed",
-        (snapshot) => {
-          const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-          onProgress?.(progress);
-        },
-        (error) => {
-          console.error("Upload error:", error);
-          reject(error);
-        },
-        async () => {
-          try {
-            const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-            resolve(downloadURL);
-          } catch (error) {
-            reject(error);
+    const filePath = storagePaths.userFiles(userId, fileName);
+    
+    let abortController = new AbortController();
+    
+    const uploadPromise = new Promise<string>(async (resolve, reject) => {
+      try {
+        // Simulate progress updates (Supabase doesn't provide native progress tracking)
+        let progress = 0;
+        const progressInterval = setInterval(() => {
+          progress += 10;
+          onProgress?.({
+            progress: Math.min(progress, 90),
+            loaded: Math.min(progress * file.size / 100, file.size * 0.9),
+            total: file.size
+          });
+          
+          if (progress >= 90) {
+            clearInterval(progressInterval);
           }
+        }, 100);
+
+        const { data, error } = await supabase.storage
+          .from(storageBuckets.userFiles)
+          .upload(filePath, file, {
+            cacheControl: '3600',
+            upsert: false,
+          });
+
+        clearInterval(progressInterval);
+
+        if (error) {
+          throw error;
         }
-      );
+
+        // Final progress update
+        onProgress?.({
+          progress: 100,
+          loaded: file.size,
+          total: file.size
+        });
+
+        // Get public URL
+        const { data: { publicUrl } } = supabase.storage
+          .from(storageBuckets.userFiles)
+          .getPublicUrl(filePath);
+
+        resolve(publicUrl);
+      } catch (error) {
+        console.error("Upload error:", error);
+        reject(error);
+      }
     });
 
-    return { uploadTask, promise };
+    return {
+      uploadPromise,
+      abort: () => {
+        abortController.abort();
+      }
+    };
   },
 
   // Delete file
-  async deleteFile(filePath: string): Promise<void> {
+  async deleteFile(bucket: string, filePath: string): Promise<void> {
     try {
-      const fileRef = ref(storage, filePath);
-      await deleteObject(fileRef);
+      const { error } = await supabase.storage
+        .from(bucket)
+        .remove([filePath]);
+
+      if (error) {
+        throw error;
+      }
     } catch (error) {
       console.error("Error deleting file:", error);
       throw error;
     }
   },
 
-  // List all files in a folder
-  async listFiles(folderPath: string): Promise<string[]> {
+  // Delete user avatar
+  async deleteAvatar(userId: string): Promise<void> {
     try {
-      const folderRef = ref(storage, folderPath);
-      const result = await listAll(folderRef);
-      
-      const urls = await Promise.all(
-        result.items.map(async (itemRef) => {
-          return getDownloadURL(itemRef);
-        })
-      );
-      
-      return urls;
+      // List all files in user's avatar folder and delete them
+      const { data: files, error: listError } = await supabase.storage
+        .from(storageBuckets.avatars)
+        .list(userId);
+
+      if (listError) {
+        throw listError;
+      }
+
+      if (files && files.length > 0) {
+        const filesToDelete = files.map(file => `${userId}/${file.name}`);
+        const { error: deleteError } = await supabase.storage
+          .from(storageBuckets.avatars)
+          .remove(filesToDelete);
+
+        if (deleteError) {
+          throw deleteError;
+        }
+      }
+    } catch (error) {
+      console.error("Error deleting avatar:", error);
+      throw error;
+    }
+  },
+
+  // List all files in a user folder
+  async listUserFiles(userId: string): Promise<Array<{ name: string; url: string; size?: number; created_at?: string }>> {
+    try {
+      const { data: files, error } = await supabase.storage
+        .from(storageBuckets.userFiles)
+        .list(userId);
+
+      if (error) {
+        throw error;
+      }
+
+      const filesWithUrls = files?.map(file => {
+        const { data: { publicUrl } } = supabase.storage
+          .from(storageBuckets.userFiles)
+          .getPublicUrl(`${userId}/${file.name}`);
+
+        return {
+          name: file.name,
+          url: publicUrl,
+          size: file.metadata?.size,
+          created_at: file.created_at
+        };
+      }) || [];
+
+      return filesWithUrls;
     } catch (error) {
       console.error("Error listing files:", error);
       return [];
     }
   },
 
-  // Get download URL from path
-  async getDownloadURL(filePath: string): Promise<string> {
+  // Get public URL for a file
+  getPublicUrl(bucket: string, filePath: string): string {
+    const { data: { publicUrl } } = supabase.storage
+      .from(bucket)
+      .getPublicUrl(filePath);
+
+    return publicUrl;
+  },
+
+  // Create signed URL for temporary access (for private files)
+  async createSignedUrl(bucket: string, filePath: string, expiresIn: number = 3600): Promise<string> {
     try {
-      const fileRef = ref(storage, filePath);
-      return await getDownloadURL(fileRef);
+      const { data, error } = await supabase.storage
+        .from(bucket)
+        .createSignedUrl(filePath, expiresIn);
+
+      if (error) {
+        throw error;
+      }
+
+      return data.signedUrl;
     } catch (error) {
-      console.error("Error getting download URL:", error);
+      console.error("Error creating signed URL:", error);
       throw error;
     }
   },
 };
+
+// Export bucket names for external use
+export { storageBuckets, storagePaths };

@@ -18,7 +18,7 @@ export default function Home() {
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
       <Typography variant="h2" component="h1" gutterBottom>
-        Next.js Firebase Template
+        Next.js + Supabase Template
       </Typography>
       
       <Box sx={{ my: 4 }}>
@@ -76,25 +76,28 @@ export default function Home() {
         </Typography>
         <List>
           <ListItem>
-            <ListItemText primary="Firebase Authentication (Email/Password, Google, Anonymous)" />
+            <ListItemText primary="🔐 Supabase Authentication (Email/Password, OAuth providers)" />
           </ListItem>
           <ListItem>
-            <ListItemText primary="Firestore Database integration" />
+            <ListItemText primary="🗄️ PostgreSQL Database with Row Level Security (RLS)" />
           </ListItem>
           <ListItem>
-            <ListItemText primary="Firebase Storage for file uploads" />
+            <ListItemText primary="💾 Supabase Storage for file uploads" />
           </ListItem>
           <ListItem>
-            <ListItemText primary="Firebase Functions support" />
+            <ListItemText primary="🔄 Real-time subscriptions with Supabase" />
           </ListItem>
           <ListItem>
-            <ListItemText primary="State management with Jotai" />
+            <ListItemText primary="⚡ FastAPI backend with Python" />
           </ListItem>
           <ListItem>
-            <ListItemText primary="TypeScript support" />
+            <ListItemText primary="🤖 3-tier Claude Code agentic framework" />
           </ListItem>
           <ListItem>
-            <ListItemText primary="Material-UI components" />
+            <ListItemText primary="📝 TypeScript support with full type safety" />
+          </ListItem>
+          <ListItem>
+            <ListItemText primary="🎨 Material-UI components and theming" />
           </ListItem>
         </List>
       </Paper>

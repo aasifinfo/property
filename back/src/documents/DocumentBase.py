@@ -1,12 +1,11 @@
-"""Document base class for Firestore operations."""
+"""Document base class for Supabase operations."""
 
 from datetime import datetime, timezone
-from typing import Type, Optional, TypeVar, Generic
-from google.cloud.firestore_v1.collection import CollectionReference
-from firebase_admin.exceptions import FirebaseError
+from typing import Type, Optional, TypeVar, Generic, Dict
 import logging
-from src.apis.Db import Db
-from src.models.firestore_types import BaseDoc
+import uuid
+from src.apis.SupabaseClient import SupabaseClient
+from src.models.supabase_types import BaseDoc
 
 DocLike = TypeVar('DocLike', bound=BaseDoc)
 
@@ -33,139 +32,120 @@ def ignore_none(func):
 
 
 class DocumentBase(Generic[DocLike]):
-    collection_ref: CollectionReference = None  # type: ignore
+    table_name: str = None  # type: ignore
     _doc: Optional[DocLike] = None
-    _db: Optional[Db] = None
+    _client: Optional[SupabaseClient] = None
     pydantic_model: Type[DocLike] = None  # type: ignore
 
     @property
-    def db(self) -> Db:
-        if self._db is None:
-            self._db = Db.get_instance()
-        return self._db
+    def client(self) -> SupabaseClient:
+        if self._client is None:
+            self._client = SupabaseClient.get_instance()
+        return self._client
 
-    def __init__(self, id: str, doc: dict | None = None):
+    def __init__(self, id: Optional[str] = None, doc: dict | None = None):
         """
         Initialize the document.
-        :param id: Id of the document, if id and doc are Falsy, the id will be created.
+        :param id: Id of the document, if id and doc are None, a new id will be created.
         """
-        self.id = id
-        self.debug = Db.is_development()
-        i = self.collection_ref
-        self.default_error = FirebaseError(
-            "internal", "Error. Please contact support.")
+        self.id = id or str(uuid.uuid4())
+        self.debug = SupabaseClient.is_development()
+        self.default_error = Exception("Error. Please contact support.")
 
         if not doc:
-            self._init_doc()  # fetches the document from FB with provided ID
+            # Document will be loaded later with load() method
+            self._doc = None
         else:
             self._doc = self.pydantic_model(**doc)
 
-    def _init_doc(self):
+    async def load(self):
+        """Load the document from the database"""
         if not self.pydantic_model:
-            raise FirebaseError(
-                "internal", "You forgot to set pydantic_model.")
-        if not self.collection_ref:
-            raise FirebaseError(
-                "internal", "You forgot to set collection_ref.")
+            raise ValueError("You forgot to set pydantic_model.")
+        if not self.table_name:
+            raise ValueError("You forgot to set table_name.")
         if not self.id:
-            self.id = self.collection_ref.document().id
-        doc_ref = self.collection_ref.document(self.id)
-        doc = doc_ref.get()
+            raise ValueError("Document ID is required to load.")
 
-        if not doc.exists:
-            raise FirebaseError(
-                "not-found", f"Doc not found for entity: {self.id}")
+        doc_data = await self.client.get_by_id(self.table_name, self.id)
+        
+        if not doc_data:
+            raise ValueError(f"Doc not found for entity: {self.id}")
 
-        doc_dict = doc.to_dict()
+        # Convert database timestamps to Python datetime objects if needed
+        if "updated_at" in doc_data:
+            doc_data["lastUpdatedAt"] = doc_data["updated_at"]
+        if "created_at" in doc_data:
+            doc_data["createdAt"] = doc_data["created_at"]
 
-        if "lastUpdatedAt" not in doc_dict:
-            doc_dict["lastUpdatedAt"] = doc_dict.get(
-                "createdAt", datetime.now(timezone.utc))
-
-        self._doc = self.pydantic_model(**doc.to_dict())
+        self._doc = self.pydantic_model(**doc_data)
 
     @property
     def doc(self) -> DocLike:
         if self._doc:
             return self._doc
         else:
-            raise FirebaseError("internal", "Document is None")
+            raise ValueError("Document is None - call load() first")
 
-    def create_doc(self, data: dict, ref=None):
-        now = self.db.server_timestamp
-        self._doc = self.pydantic_model(**data)
-
-        self._doc.createdAt = now
-        self._doc.lastUpdatedAt = now
+    async def create(self, data: dict):
+        """Create a new document in the database"""
+        if not self.table_name:
+            raise ValueError("You forgot to set table_name.")
         
-        new_data = {
-            **data,
-            "createdAt": now,
-            "lastUpdatedAt": now,
-        }
+        # Ensure we have an ID
+        if not self.id:
+            self.id = str(uuid.uuid4())
         
-        if ref:
-            ref.set(data)
-        else:
-            self.collection_ref.document(self.id).set(new_data)
+        # Add ID to data
+        data["id"] = self.id
+        
+        # Create the document in the database
+        created_doc = await self.client.insert(self.table_name, data)
+        
+        # Convert database fields to model fields
+        if "created_at" in created_doc:
+            created_doc["createdAt"] = created_doc["created_at"]
+        if "updated_at" in created_doc:
+            created_doc["lastUpdatedAt"] = created_doc["updated_at"]
+            
+        self._doc = self.pydantic_model(**created_doc)
 
-    def save_doc(self):
-        now = datetime.now(tz=timezone.utc)
-        self._doc.lastUpdatedAt = now
-        self.collection_ref.document(self.id).set(
-            self.doc.model_dump(exclude_none=True), merge=True)  # type: ignore
+    async def save(self):
+        """Save the current document state to the database"""
+        if not self._doc:
+            raise ValueError("No document to save")
+        
+        # Convert model to dict and update
+        data = self.doc.model_dump(exclude_none=True)
+        data.pop("id", None)  # Remove ID from update data
+        
+        await self.client.update(self.table_name, data, {"id": self.id})
 
     @ignore_none
-    def merge_doc(self, data):
-        now = datetime.now(tz=timezone.utc)
-        self._doc.lastUpdatedAt = now
-        data["lastUpdatedAt"] = now
-        self.collection_ref.document(self.id).set(data, merge=True)
+    async def update(self, data: dict):
+        """Update the document with new data"""
+        if not self.table_name:
+            raise ValueError("You forgot to set table_name.")
+        
+        # Update in database
+        updated_doc = await self.client.update(self.table_name, data, {"id": self.id})
+        
+        # Update local model if we have one
+        if self._doc:
+            for key, value in data.items():
+                if hasattr(self._doc, key):
+                    setattr(self._doc, key, value)
+        
+        return updated_doc
 
-    @ignore_none
-    def update_doc(self, data):
-        now = datetime.now(tz=timezone.utc)
-        try:
-            self._doc.lastUpdatedAt = now
-        except ValueError:
-            pass
-        data["lastUpdatedAt"] = now
-        self.collection_ref.document(self.id).update(data)
+    async def delete(self):
+        """Delete the document from the database"""
+        if not self.table_name:
+            raise ValueError("You forgot to set table_name.")
+        
+        await self.client.delete(self.table_name, {"id": self.id})
+        self._doc = None
 
-    def update_doc_with_retry(self, data: dict, max_retries: int = 5):
-        db = self.db.firestore
-        doc_ref = self.get_doc_ref()
-
-        def _update_in_transaction(transaction):
-            now = datetime.now(tz=timezone.utc)
-            update_data = data.copy()
-            update_data["lastUpdatedAt"] = now
-            transaction.update(doc_ref, update_data)
-            try:
-                if self._doc:
-                    self._doc.lastUpdatedAt = now
-            except (ValueError, AttributeError):
-                pass
-
-        try:
-            db.run_transaction(_update_in_transaction,
-                               max_attempts=max_retries)
-            return True
-        except Exception as e:
-            logging.error(
-                f"Transaction failed for document {self.id} after {max_retries} retries: {e}")
-            return False
-
-    def delete(self):
-        if self.collection_ref:
-            self.collection_ref.document(self.id).delete()
-            self._doc = None
-
-    def get_doc_path(self):
-        return self.collection_ref.document(self.id).path
-
-    def get_doc_ref(self):
-        return self.collection_ref.document(self.id)
-
-    def get_doc_snap(self):
-        return self.collection_ref.document(self.id).get()
+    def get_doc_id(self):
+        """Get the document ID"""
+        return self.id

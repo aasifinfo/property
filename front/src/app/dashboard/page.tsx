@@ -36,6 +36,51 @@ export default function DashboardPage() {
     }
   };
 
+  const handleViewProfile = () => {
+    alert("Profile functionality - Coming soon!");
+  };
+
+  const handleExploreDatabase = async () => {
+    try {
+      const response = await fetch("http://localhost:8001/api/items");
+      const data = await response.json();
+      alert(`Database items: ${JSON.stringify(data, null, 2)}`);
+    } catch (error) {
+      alert("Error connecting to database API");
+      console.error(error);
+    }
+  };
+
+  const handleUploadFiles = async () => {
+    try {
+      const response = await fetch("http://localhost:8001/api/upload-test", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({})
+      });
+      const data = await response.json();
+      alert(`Upload test: ${JSON.stringify(data, null, 2)}`);
+    } catch (error) {
+      alert("Error testing upload functionality");
+      console.error(error);
+    }
+  };
+
+  const handleTestFunction = async () => {
+    try {
+      const response = await fetch("http://localhost:8001/api/test-function", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: "Hello from Dashboard!" })
+      });
+      const data = await response.json();
+      alert(`Function test: ${JSON.stringify(data, null, 2)}`);
+    } catch (error) {
+      alert("Error testing function");
+      console.error(error);
+    }
+  };
+
   if (loading) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight="100vh">
@@ -84,7 +129,7 @@ export default function DashboardPage() {
               </Typography>
             </CardContent>
             <CardActions>
-              <Button size="small">View Profile</Button>
+              <Button size="small" onClick={handleViewProfile}>View Profile</Button>
             </CardActions>
           </Card>
         </Grid>
@@ -97,11 +142,11 @@ export default function DashboardPage() {
                 <Typography variant="h6">Database</Typography>
               </Box>
               <Typography variant="body2" color="text.secondary">
-                Firestore database operations
+                Supabase database operations
               </Typography>
             </CardContent>
             <CardActions>
-              <Button size="small">Explore</Button>
+              <Button size="small" onClick={handleExploreDatabase}>Explore</Button>
             </CardActions>
           </Card>
         </Grid>
@@ -118,7 +163,7 @@ export default function DashboardPage() {
               </Typography>
             </CardContent>
             <CardActions>
-              <Button size="small">Upload Files</Button>
+              <Button size="small" onClick={handleUploadFiles}>Upload Files</Button>
             </CardActions>
           </Card>
         </Grid>
@@ -131,11 +176,11 @@ export default function DashboardPage() {
                 <Typography variant="h6">Functions</Typography>
               </Box>
               <Typography variant="body2" color="text.secondary">
-                Call Firebase Functions
+                Call API Functions
               </Typography>
             </CardContent>
             <CardActions>
-              <Button size="small">Test Function</Button>
+              <Button size="small" onClick={handleTestFunction}>Test Function</Button>
             </CardActions>
           </Card>
         </Grid>

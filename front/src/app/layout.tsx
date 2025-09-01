@@ -4,8 +4,8 @@ import { AuthProvider } from "@/auth/AuthProvider";
 import { ThemeProvider } from "@/theme/ThemeProvider";
 
 export const metadata: Metadata = {
-  title: "Next.js Firebase Template",
-  description: "A minimal Next.js app with Firebase integration",
+  title: "Next.js + Supabase Template",
+  description: "A production-ready Next.js app with Supabase integration and 3-tier Claude Code framework",
 };
 
 export default function RootLayout({

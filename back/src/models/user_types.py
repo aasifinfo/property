@@ -2,7 +2,7 @@
 
 from typing import Optional, Dict, Any
 from pydantic import BaseModel
-from src.models.firestore_types import BaseDoc
+from src.models.supabase_types import BaseDoc
 
 
 class UserDoc(BaseDoc):

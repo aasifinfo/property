@@ -1,59 +1,56 @@
 """
-Firebase Functions entry point.
-All functions must be exported from this file for deployment.
+FastAPI backend entry point.
+Supabase-based API server for Next.js frontend.
 """
 
 import logging
-from firebase_admin import initialize_app
-from firebase_admin import credentials
 import os
-
-# Initialize Firebase Admin SDK
-if os.getenv("ENV") == "production":
-    initialize_app()
-else:
-    # For development/testing with service account
-    service_account_path = os.getenv("FIREBASE_SERVICE_ACCOUNT_PATH")
-    if service_account_path and os.path.exists(service_account_path):
-        cred = credentials.Certificate(service_account_path)
-        initialize_app(cred)
-    else:
-        # Use default credentials if no service account specified
-        initialize_app()
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+import uvicorn
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Import callable functions
-from src.brokers.callable.example_callable import example_callable
-from src.brokers.callable.create_item import create_item_callable
-from src.brokers.callable.get_item import get_item_callable
+# Create FastAPI app
+app = FastAPI(
+    title="Next.js Supabase API",
+    description="FastAPI backend for Next.js + Supabase template",
+    version="1.0.0"
+)
 
-# Import HTTPS functions
-from src.brokers.https.health_check import health_check
-from src.brokers.https.webhook_handler import webhook_handler
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000", "http://localhost:3001"],  # Add your frontend URLs
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-# Import triggered functions
-from src.brokers.triggered.on_item_created import on_item_created
-from src.brokers.triggered.on_item_updated import on_item_updated
-from src.brokers.triggered.on_item_deleted import on_item_deleted
+# Import routers
+from src.brokers.api.items import router as items_router
+from src.brokers.api.auth import router as auth_router
+from src.brokers.api.health import router as health_router
+from src.brokers.api.categories import router as categories_router
+from src.brokers.api.webhooks import router as webhooks_router
 
-# Export all functions for Firebase deployment
-__all__ = [
-    # Callable functions
-    'example_callable',
-    'create_item_callable',
-    'get_item_callable',
-    
-    # HTTPS functions
-    'health_check',
-    'webhook_handler',
-    
-    # Triggered functions
-    'on_item_created',
-    'on_item_updated',
-    'on_item_deleted',
-]
+# Include routers
+app.include_router(health_router, tags=["health"])
+app.include_router(auth_router, prefix="/auth", tags=["auth"])
+app.include_router(items_router, prefix="/api", tags=["items"])
+app.include_router(categories_router, prefix="/api", tags=["categories"])
+app.include_router(webhooks_router, prefix="/api", tags=["webhooks"])
 
-logger.info("Firebase Functions initialized successfully")
+@app.get("/")
+async def root():
+    """Root endpoint"""
+    return {"message": "Next.js Supabase API is running", "version": "1.0.0"}
+
+
+if __name__ == "__main__":
+    port = int(os.getenv("PORT", 8000))
+    uvicorn.run("main:app", host="0.0.0.0", port=port, reload=True)
+
+logger.info("FastAPI backend initialized successfully")

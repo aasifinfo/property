@@ -5,9 +5,12 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "dev:port": "next dev -p ${FRONTEND_PORT:-3000}",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "start:port": "next start -p ${FRONTEND_PORT:-3000}",
+    "lint": "next lint",
+    "setup": "cd .. && npm run setup"
   },
   "dependencies": {
     "@emotion/cache": "^11.11.0",
@@ -17,7 +20,7 @@
     "@mui/icons-material": "^5.16.7",
     "@mui/material": "^5.16.7",
     "@mui/material-nextjs": "^6.1.9",
-    "firebase": "^10.14.1",
+    "@supabase/supabase-js": "^2.39.0",
     "next": "^14.2.13",
     "notistack": "^3.0.1",
     "react": "^18.2.0",

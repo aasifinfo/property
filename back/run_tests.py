@@ -2,7 +2,7 @@ import os
 import sys
 import subprocess
 import argparse
-from tests.util.firebase_emulator import start_functions_emulator
+from tests.util.supabase_stack import start_supabase_stack
 from dotenv import load_dotenv
 
 if __name__ == "__main__":
@@ -121,8 +121,8 @@ if __name__ == "__main__":
                 print(f"Error stopping emulator: {e}")
             
             # Additional cleanup
-            from tests.util.firebase_emulator import stop_emulators
-            stop_emulators()
+            from tests.util.supabase_stack import stop_supabase_stack
+            stop_supabase_stack()
             print("\n======= Functions Emulator with Firestore Emulator Killed =======\n")
         else:
             print("\n======= No emulator to clean up =======\n")

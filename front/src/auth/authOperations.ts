@@ -1,27 +1,20 @@
 "use client";
 
-import {
-  signInWithEmailAndPassword,
-  createUserWithEmailAndPassword,
-  signOut,
-  sendPasswordResetEmail,
-  updateProfile,
-  signInWithPopup,
-  GoogleAuthProvider,
-  signInAnonymously,
-  User,
-  sendEmailVerification,
-} from "firebase/auth";
-import { auth } from "@/lib/firebase";
-import { userOperations } from "@/lib/firestore";
+import { supabase, api } from "@/lib/supabase";
+import type { User } from "@supabase/supabase-js";
 
 // Auth operations
 export const authOperations = {
   // Sign in with email and password
   async signIn(email: string, password: string) {
     try {
-      const result = await signInWithEmailAndPassword(auth, email, password);
-      return result.user;
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) throw error;
+      return data.user;
     } catch (error) {
       console.error("Sign in error:", error);
       throw error;
@@ -31,25 +24,25 @@ export const authOperations = {
   // Sign up with email and password
   async signUp(email: string, password: string, displayName?: string) {
     try {
-      const result = await createUserWithEmailAndPassword(auth, email, password);
-      
-      // Update display name if provided
-      if (displayName) {
-        await updateProfile(result.user, { displayName });
-      }
-
-      // Send verification email
-      await sendEmailVerification(result.user);
-
-      // Create user document in Firestore
-      await userOperations.create(result.user.uid, {
-        uid: result.user.uid,
-        email: result.user.email || undefined,
-        displayName: displayName || result.user.displayName || undefined,
-        photoURL: result.user.photoURL || undefined,
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            display_name: displayName,
+          },
+        },
       });
 
-      return result.user;
+      if (error) throw error;
+
+      // User profile will be automatically created by Supabase
+      // Additional user data can be stored in a profiles table
+      if (data.user && displayName) {
+        await this.updateProfile(data.user, { displayName });
+      }
+
+      return data.user;
     } catch (error) {
       console.error("Sign up error:", error);
       throw error;
@@ -59,33 +52,27 @@ export const authOperations = {
   // Sign in with Google
   async signInWithGoogle() {
     try {
-      const provider = new GoogleAuthProvider();
-      const result = await signInWithPopup(auth, provider);
-      
-      // Check if this is a new user
-      const existingUser = await userOperations.getById(result.user.uid);
-      if (!existingUser) {
-        // Create user document for new Google users
-        await userOperations.create(result.user.uid, {
-          uid: result.user.uid,
-          email: result.user.email || undefined,
-          displayName: result.user.displayName || undefined,
-          photoURL: result.user.photoURL || undefined,
-        });
-      }
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/dashboard`,
+        },
+      });
 
-      return result.user;
+      if (error) throw error;
+      return data;
     } catch (error) {
       console.error("Google sign in error:", error);
       throw error;
     }
   },
 
-  // Sign in anonymously
+  // Sign in anonymously (if supported by your setup)
   async signInAnonymously() {
     try {
-      const result = await signInAnonymously(auth);
-      return result.user;
+      const { data, error } = await supabase.auth.signInAnonymously();
+      if (error) throw error;
+      return data.user;
     } catch (error) {
       console.error("Anonymous sign in error:", error);
       throw error;
@@ -95,7 +82,8 @@ export const authOperations = {
   // Sign out
   async signOut() {
     try {
-      await signOut(auth);
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
     } catch (error) {
       console.error("Sign out error:", error);
       throw error;
@@ -105,7 +93,10 @@ export const authOperations = {
   // Send password reset email
   async sendPasswordResetEmail(email: string) {
     try {
-      await sendPasswordResetEmail(auth, email);
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      if (error) throw error;
     } catch (error) {
       console.error("Password reset error:", error);
       throw error;
@@ -115,22 +106,59 @@ export const authOperations = {
   // Update user profile
   async updateProfile(user: User, profile: { displayName?: string; photoURL?: string }) {
     try {
-      await updateProfile(user, profile);
-      
-      // Update Firestore document
-      await userOperations.update(user.uid, profile);
+      // Update auth metadata
+      const updates: any = {};
+      if (profile.displayName) updates.display_name = profile.displayName;
+      if (profile.photoURL) updates.avatar_url = profile.photoURL;
+
+      const { error } = await supabase.auth.updateUser({
+        data: updates,
+      });
+
+      if (error) throw error;
+
+      // Update profiles table if you have one
+      // await api.put(`/profile`, profile);
     } catch (error) {
       console.error("Profile update error:", error);
       throw error;
     }
   },
 
-  // Send email verification
-  async sendEmailVerification(user: User) {
+  // Resend email confirmation
+  async resendEmailConfirmation(email: string) {
     try {
-      await sendEmailVerification(user);
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email,
+      });
+      if (error) throw error;
     } catch (error) {
       console.error("Email verification error:", error);
+      throw error;
+    }
+  },
+
+  // Get current session
+  async getSession() {
+    try {
+      const { data, error } = await supabase.auth.getSession();
+      if (error) throw error;
+      return data.session;
+    } catch (error) {
+      console.error("Get session error:", error);
+      throw error;
+    }
+  },
+
+  // Get current user
+  async getUser() {
+    try {
+      const { data, error } = await supabase.auth.getUser();
+      if (error) throw error;
+      return data.user;
+    } catch (error) {
+      console.error("Get user error:", error);
       throw error;
     }
   },

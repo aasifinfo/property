@@ -1,0 +1,76 @@
+{
+  "hooks": [
+    {
+      "name": "Architecture Enforcement Hook",
+      "description": "Validates adherence to DocumentBase patterns and prevents direct database access",
+      "event": "PreToolUse",
+      "command": "python3",
+      "args": [".claude/hooks/architecture_enforcement.py"],
+      "matchers": [
+        {
+          "tool": "Edit"
+        },
+        {
+          "tool": "Write"
+        },
+        {
+          "tool": "MultiEdit"
+        }
+      ],
+      "enabled": true
+    },
+    {
+      "name": "ADR Documentation Hook",
+      "description": "Prompts for ADR updates when architectural files are modified",
+      "event": "PostToolUse",
+      "command": "python3",
+      "args": [".claude/hooks/adr_documentation.py"],
+      "matchers": [
+        {
+          "tool": "Edit",
+          "path_patterns": [
+            "**/.claude/agents/**/*.md",
+            "**/src/documents/**/*.py",
+            "**/src/brokers/api/**/*.py",
+            "**/components/**/*.tsx",
+            "**/theme/**/*.ts",
+            "**/supabase/init.sql"
+          ]
+        },
+        {
+          "tool": "Write",
+          "path_patterns": [
+            "**/.claude/agents/**/*.md",
+            "**/src/documents/**/*.py",
+            "**/src/brokers/api/**/*.py",
+            "**/components/**/*.tsx",
+            "**/theme/**/*.ts"
+          ]
+        }
+      ],
+      "enabled": true
+    },
+    {
+      "name": "Test-First Enforcement Hook",
+      "description": "Blocks API implementation without corresponding integration tests",
+      "event": "PreToolUse",
+      "command": "python3",
+      "args": [".claude/hooks/test_first_enforcement.py"],
+      "matchers": [
+        {
+          "tool": "Edit",
+          "path_patterns": [
+            "**/src/brokers/api/**/*.py"
+          ]
+        },
+        {
+          "tool": "Write",
+          "path_patterns": [
+            "**/src/brokers/api/**/*.py"
+          ]
+        }
+      ],
+      "enabled": true
+    }
+  ]
+}

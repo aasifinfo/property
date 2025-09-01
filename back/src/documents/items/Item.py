@@ -3,14 +3,14 @@
 from typing import Optional, List
 from src.documents.DocumentBase import DocumentBase
 from src.apis.Db import Db
-from src.models.firestore_types import ItemDoc, ItemActivityDoc
+from src.models.supabase_types import ItemDoc, ItemActivityDoc
 from src.util.logger import get_logger
 
 logger = get_logger(__name__)
 
 
 class Item(DocumentBase[ItemDoc]):
-    """Item document class for managing items in Firestore."""
+    """Item document class for managing items in Supabase."""
     
     pydantic_model = ItemDoc
     

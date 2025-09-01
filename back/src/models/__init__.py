@@ -1,6 +1,6 @@
 """Models package initialization."""
 
-from .firestore_types import ItemDoc, CategoryDoc, ItemActivityDoc, UserDoc
+from .supabase_types import ItemDoc, CategoryDoc, ItemActivityDoc, UserDoc
 from .function_types import (
     CreateItemRequest,
     CreateItemResponse,

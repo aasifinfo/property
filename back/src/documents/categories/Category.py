@@ -3,14 +3,14 @@
 from typing import Optional, List
 from src.documents.DocumentBase import DocumentBase
 from src.apis.Db import Db
-from src.models.firestore_types import CategoryDoc
+from src.models.supabase_types import CategoryDoc
 from src.util.logger import get_logger
 
 logger = get_logger(__name__)
 
 
 class Category(DocumentBase[CategoryDoc]):
-    """Category document class for managing categories in Firestore."""
+    """Category document class for managing categories in Supabase."""
     
     pydantic_model = CategoryDoc
     

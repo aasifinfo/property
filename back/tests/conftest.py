@@ -7,48 +7,29 @@ import sys
 # Add src to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
-# Import utilities and fixtures
-from tests.util.firebase_emulator import firebase_emulator, setup_emulators  # noqa: F401
-from tests.util.item_flow_setup import item_flow_setup, ItemFlowSetup  # noqa: F401
-
-# Configure test environment
-os.environ["GCLOUD_PROJECT"] = "test-project"
-os.environ["FIRESTORE_EMULATOR_HOST"] = "localhost:8080"
-os.environ["FIREBASE_STORAGE_EMULATOR_HOST"] = "localhost:9199"
+# Configure test environment for Supabase
+os.environ["ENV"] = "test"
+os.environ["SUPABASE_URL"] = os.getenv("SUPABASE_URL", "https://your-project-ref.supabase.co")
+os.environ["SUPABASE_SERVICE_ROLE_KEY"] = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "your-service-role-key")
+os.environ["SUPABASE_ANON_KEY"] = os.getenv("SUPABASE_ANON_KEY", "your-anon-key")
 
 
 @pytest.fixture(scope="session")
-def firebase_app():
-    """Initialize Firebase app for testing."""
-    import firebase_admin
-    from firebase_admin import credentials
-    import os
+def supabase_client():
+    """Initialize Supabase client for testing."""
+    from src.apis.SupabaseClient import SupabaseClient
     
-    # Use the test service account file
-    service_account_filename = os.getenv(
-        "FIREBASE_SERVICE_ACCOUNT_PATH", 
-        "blank-test-project-firebase-adminsdk-k2n85-7570e24581.json"
-    )
-    service_account_path = os.path.join(
-        os.path.dirname(__file__), "..", 
-        service_account_filename
-    )
+    client = SupabaseClient.get_instance()
     
-    # Use certificate credentials for testing
-    cred = credentials.Certificate(service_account_path)
-    app = firebase_admin.initialize_app(cred)  # No name = default app
+    yield client
     
-    yield app
-    
-    # Cleanup
-    try:
-        firebase_admin.delete_app(app)
-    except Exception:
-        pass
+    # Cleanup - For tests, you might want to clean up test data
+    # This depends on your test strategy (separate test database, cleanup procedures, etc.)
+    pass
 
 
 @pytest.fixture
-def db(firebase_app):
+def db(supabase_client):
     """Get test database instance."""
     from src.apis.Db import Db
     return Db.get_instance()
@@ -58,5 +39,29 @@ def db(firebase_app):
 def test_user_id():
     """Get a test user ID."""
     return "test-user-123"
+
+
+@pytest.fixture
+def test_user():
+    """Get a mock test user object."""
+    class MockUser:
+        def __init__(self, user_id: str):
+            self.id = user_id
+            self.email = f"{user_id}@test.com"
+    
+    return MockUser("test-user-123")
+
+
+@pytest.fixture
+def authenticated_client():
+    """Get an authenticated test client for FastAPI endpoints."""
+    from fastapi.testclient import TestClient
+    from main import app
+    
+    client = TestClient(app)
+    
+    # For testing, you would typically mock the authentication
+    # This depends on your specific testing strategy
+    return client
 
 

@@ -1,9 +1,8 @@
 "use client";
 
-import { httpsCallable, HttpsCallableResult } from "firebase/functions";
-import { functions } from "./firebase";
+import { api } from "./supabase";
 
-// Example function types
+// Example API request/response types
 export interface ExampleRequest {
   message: string;
 }
@@ -12,25 +11,93 @@ export interface ExampleResponse {
   result: string;
 }
 
-// Callable functions wrapper
-export const callableFunctions = {
-  // Example callable function
+// API functions wrapper - replaces Firebase Functions with FastAPI backend calls
+export const apiFunctions = {
+  // Example API function
   exampleFunction: async (data: ExampleRequest): Promise<ExampleResponse> => {
-    const callable = httpsCallable<ExampleRequest, ExampleResponse>(
-      functions,
-      "exampleFunction"
-    );
-    const result = await callable(data);
-    return result.data;
+    return await api.post("/api/example", data);
+  },
+
+  // User management functions
+  users: {
+    getProfile: async (userId: string) => {
+      return await api.get(`/api/users/${userId}`);
+    },
+    
+    updateProfile: async (userId: string, data: any) => {
+      return await api.put(`/api/users/${userId}`, data);
+    },
+    
+    deleteProfile: async (userId: string) => {
+      return await api.delete(`/api/users/${userId}`);
+    },
+  },
+
+  // Items management (example resource)
+  items: {
+    list: async () => {
+      return await api.get("/api/items");
+    },
+    
+    create: async (data: any) => {
+      return await api.post("/api/items", data);
+    },
+    
+    get: async (itemId: string) => {
+      return await api.get(`/api/items/${itemId}`);
+    },
+    
+    update: async (itemId: string, data: any) => {
+      return await api.put(`/api/items/${itemId}`, data);
+    },
+    
+    delete: async (itemId: string) => {
+      return await api.delete(`/api/items/${itemId}`);
+    },
+  },
+
+  // Health check
+  healthCheck: async () => {
+    return await api.get("/health");
   },
 };
 
-// Generic callable function helper
+// Generic API function helper - replaces callable functions pattern
+export async function callAPI<TRequest, TResponse>(
+  endpoint: string,
+  method: "GET" | "POST" | "PUT" | "DELETE" = "POST",
+  data?: TRequest
+): Promise<TResponse> {
+  switch (method) {
+    case "GET":
+      return await api.get(endpoint);
+    case "POST":
+      return await api.post(endpoint, data);
+    case "PUT":
+      return await api.put(endpoint, data);
+    case "DELETE":
+      return await api.delete(endpoint);
+    default:
+      throw new Error(`Unsupported method: ${method}`);
+  }
+}
+
+// Backward compatibility - map old callFunction to new API structure
 export async function callFunction<TRequest, TResponse>(
   functionName: string,
   data: TRequest
 ): Promise<TResponse> {
-  const callable = httpsCallable<TRequest, TResponse>(functions, functionName);
-  const result = await callable(data);
-  return result.data;
+  // Map old Firebase function names to new API endpoints
+  const endpointMap: { [key: string]: string } = {
+    exampleFunction: "/api/example",
+    getUserProfile: "/api/users/profile",
+    createItem: "/api/items",
+    // Add more mappings as needed
+  };
+  
+  const endpoint = endpointMap[functionName] || `/api/${functionName}`;
+  return await callAPI<TRequest, TResponse>(endpoint, "POST", data);
 }
+
+// Export commonly used functions for easy access
+export const { users, items, healthCheck } = apiFunctions;

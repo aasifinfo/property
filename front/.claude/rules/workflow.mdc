@@ -1,0 +1,71 @@
+---
+alwaysApply: true
+---
+
+# Frontend Development Rules (3-Tier Framework Delegation)
+
+## ⚡ **IMMEDIATE DELEGATION TO 3-TIER FRAMEWORK**
+
+**ALL frontend development tasks are handled exclusively through the 3-tier agentic framework.**
+
+### Delegation Flow
+```
+Your Request → Main Orchestrator (Tier 1) → Front Agent (Tier 2) → Frontend Specialists (Tier 3)
+```
+
+## How This Works
+
+1. **Main Orchestrator** analyzes your request and determines it's frontend-related
+2. **Front Agent** (Tier 2) breaks down the work and coordinates specialists:
+   - `ui-component-agent`: Material-UI components, responsive design, accessibility
+   - `state-management-agent`: React hooks, context, real-time subscriptions
+   - `frontend-auth-agent`: Authentication UI flows, protected routes
+   - `form-handling-agent`: Form validation, input components, submission
+   - `routing-agent`: Next.js navigation, page layouts, route protection
+   - `frontend-test-agent`: Component testing, E2E tests, user interaction testing
+
+## What You Should Do
+
+**Simply describe what you want to build** - the framework handles everything else:
+
+```bash
+# Good examples:
+"Create a responsive user dashboard with real-time data"
+"Build a form for user profile editing with validation"
+"Add authentication to the settings page"
+"Create a mobile-friendly navigation menu"
+```
+
+## Architecture Principles (Enforced by Framework)
+
+The 3-tier framework automatically ensures these patterns:
+
+- **Component-First**: Reusable React components with Material-UI
+- **Real-time Integration**: Supabase subscriptions for live data updates
+- **Type Safety**: Strict TypeScript throughout
+- **User Experience**: Loading, error, and empty states always implemented
+- **Mobile-First**: Responsive design across all screen sizes
+- **Authentication**: Proper auth context and route protection
+
+## Framework Benefits
+
+✅ **Expert Implementation**: Each specialist is an expert in their domain  
+✅ **Architecture Consistency**: Framework enforces best practices automatically  
+✅ **Quality Assurance**: Built-in testing and code review  
+✅ **Coordinated Development**: Complex features properly orchestrated  
+
+## What NOT To Do
+
+❌ **Don't try to invoke agents directly**: Let the framework route automatically  
+❌ **Don't provide implementation details**: Focus on requirements, not how  
+❌ **Don't worry about technical patterns**: The framework handles architecture  
+
+## For More Information
+
+- **Framework Overview**: See `.claude/rules/claude-code-workflow.mdc`
+- **Agent Details**: See `.claude/agents/` for complete agent documentation
+- **Project Documentation**: See `.claude/SUB-AGENTS.md` for usage examples
+
+---
+
+**Just describe what you want to build - the 3-tier framework will handle the rest!** 🚀

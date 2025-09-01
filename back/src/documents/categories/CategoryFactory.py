@@ -1,7 +1,7 @@
 """Factory for creating Category documents."""
 
 from typing import List, Dict, Any, Optional
-from src.models.firestore_types import CategoryDoc
+from src.models.supabase_types import CategoryDoc
 from src.apis.Db import Db
 from src.util.logger import get_logger
 
@@ -158,7 +158,7 @@ class CategoryFactory:
             lastUpdatedAt=self.db.get_created_at(),
         )
         
-        # Save to Firestore
+        # Save to Supabase database
         doc_ref.set(category.model_dump())
         
         return category

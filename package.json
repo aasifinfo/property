@@ -1,0 +1,44 @@
+{
+  "name": "nextjs-supabase-template",
+  "version": "1.0.0",
+  "description": "Next.js + Supabase Full-Stack Template with 3-Tier Claude Code Framework",
+  "private": true,
+  "scripts": {
+    "setup": "node install.js",
+    "setup:shell": "./install.sh",
+    "setup:windows": "install.bat",
+    "dev": "docker-compose up -d && cd front && npm run dev",
+    "start": "docker-compose up -d",
+    "stop": "docker-compose down",
+    "restart": "docker-compose restart",
+    "clean": "docker-compose down && docker system prune -f",
+    "logs": "docker-compose logs -f",
+    "status": "docker-compose ps"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yourusername/nextjs-supabase-template.git"
+  },
+  "keywords": [
+    "nextjs",
+    "supabase",
+    "fastapi",
+    "python",
+    "typescript",
+    "postgresql",
+    "docker",
+    "template",
+    "claude-code"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/yourusername/nextjs-supabase-template/issues"
+  },
+  "homepage": "https://github.com/yourusername/nextjs-supabase-template#readme",
+  "devDependencies": {},
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  }
+}

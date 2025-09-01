@@ -1,37 +1,45 @@
 """Function request and response type definitions."""
 
-from typing import Optional, List, Dict, Any, TypedDict
+from typing import Optional, List, Dict, Any
 from pydantic import BaseModel
 
 
-class CreateItemRequest(TypedDict):
+class CreateItemRequest(BaseModel):
     """Request structure for create_item_callable."""
     name: str
-    description: Optional[str]
+    description: Optional[str] = None
     categoryId: str
-    tags: Optional[List[str]]
-    metadata: Optional[Dict[str, Any]]
+    tags: Optional[List[str]] = None
+    metadata: Optional[Dict[str, Any]] = None
 
 
-class CreateItemResponse(TypedDict):
+class CreateItemResponse(BaseModel):
     """Response structure for create_item_callable."""
     success: bool
-    itemId: Optional[str]
-    message: Optional[str]
+    item_id: Optional[str] = None
+    message: Optional[str] = None
 
 
-class GetItemRequest(TypedDict):
+class GetItemRequest(BaseModel):
     """Request structure for get_item_callable."""
     itemId: str
-    includeActivities: Optional[bool]
+    includeActivities: Optional[bool] = False
 
 
-class GetItemResponse(TypedDict):
+class GetItemResponse(BaseModel):
     """Response structure for get_item_callable."""
     success: bool
-    item: Optional[Dict[str, Any]]
-    activities: Optional[List[Dict[str, Any]]]
-    message: Optional[str]
+    item: Optional[Dict[str, Any]] = None
+    activities: Optional[List[Dict[str, Any]]] = None
+    message: Optional[str] = None
+
+
+class AuthResponse(BaseModel):
+    """Response structure for authentication endpoints."""
+    success: bool
+    user: Optional[Dict[str, Any]] = None
+    session: Optional[Dict[str, Any]] = None
+    message: Optional[str] = None
 
 
 class WebhookPayload(BaseModel):

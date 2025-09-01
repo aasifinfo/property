@@ -1,4 +1,4 @@
-import { User } from "firebase/auth";
+import type { User } from "@supabase/supabase-js";
 
 export interface AuthUser {
   uid: string;
@@ -8,6 +8,9 @@ export interface AuthUser {
   emailVerified: boolean;
   isAnonymous: boolean;
 }
+
+// Supabase auth user type
+export type SupabaseAuthUser = User;
 
 export interface AuthState {
   user: AuthUser | null;

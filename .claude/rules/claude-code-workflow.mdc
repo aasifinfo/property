@@ -1,0 +1,159 @@
+---
+alwaysApply: true
+---
+
+# Claude Code 3-Tier Agentic Framework Workflow
+
+## Project Overview
+
+This is a Next.js + Supabase full-stack template using a sophisticated 3-tier agentic framework optimized for Claude Code development. It uses FastAPI for the backend, Supabase for database/auth, and Docker for local development.
+
+## 3-Tier Architecture
+
+This project implements a hierarchical 3-tier agent system for maximum specialization and coordination:
+
+```
+Tier 1: Main Orchestrator
+├── Tier 2: Front Agent (Frontend Domain)
+│   └── Tier 3: Frontend Specialists
+│       ├── ui-component-agent
+│       ├── state-management-agent
+│       ├── frontend-auth-agent
+│       ├── form-handling-agent
+│       ├── routing-agent
+│       └── frontend-test-agent
+└── Tier 2: Back Agent (Backend Domain)
+    └── Tier 3: Backend Specialists
+        ├── api-dev-agent
+        ├── database-agent
+        ├── backend-test-agent
+        ├── devops-agent
+        └── deployment-agent
+
+Cross-Domain Tier 3:
+└── code-reviewer (can be invoked by both domains)
+```
+
+## Delegation Flow
+
+### 1. Main Orchestrator (Tier 1)
+**You are HERE** - The main entry point that:
+- Analyzes all incoming requests
+- Determines domain scope (frontend/backend/cross-cutting)
+- Delegates to appropriate Tier 2 domain agents
+- Coordinates multi-domain tasks
+- Tracks progress with TodoWrite
+
+### 2. Domain Orchestrators (Tier 2)
+- **Front Agent**: Manages all frontend work, delegates to frontend specialists
+- **Back Agent**: Manages all backend work, delegates to backend specialists
+
+### 3. Specialists (Tier 3) 
+- **Frontend Specialists**: UI, state, auth, forms, routing, testing
+- **Backend Specialists**: API, database, testing, DevOps, deployment
+- **Cross-Domain**: Code review and quality assurance
+
+## How Delegation Works
+
+### Single-Domain Tasks
+```markdown
+User Request: "Create a user profile form"
+Main Orchestrator Analysis: Frontend-only task
+→ Delegate to: Front Agent
+→ Front Agent delegates to: form-handling-agent + ui-component-agent
+```
+
+### Cross-Domain Tasks
+```markdown
+User Request: "Add user analytics dashboard"
+Main Orchestrator Analysis: Full-stack feature
+→ Delegate to: Back Agent (API + database)
+→ Delegate to: Front Agent (dashboard UI)
+→ Coordinate: Both agents working together
+```
+
+### Multi-Stage Features
+```markdown
+User Request: "Implement email notifications"
+Main Orchestrator coordinates:
+1. Back Agent → database-agent: notification tables
+2. Back Agent → api-dev-agent: email service endpoints
+3. Front Agent → ui-component-agent: notification UI
+4. Front Agent → state-management-agent: real-time updates
+```
+
+## Automatic Task Routing
+
+Claude Code automatically routes tasks based on keywords and context:
+
+### → Front Agent (frontend domain)
+- UI components, pages, layouts
+- React state, hooks, context
+- Material-UI styling, theming
+- Frontend authentication flows
+- Client-side data management
+- Responsive design, accessibility
+
+### → Back Agent (backend domain)
+- API endpoints, business logic
+- Database schema, migrations
+- Server-side authentication
+- Integration testing
+- Docker environment
+- Production deployments
+
+### Coordination Required
+- Full-stack features
+- Authentication flows
+- Real-time data updates
+- Form submissions with API
+- User workflows spanning both domains
+
+## Development Principles
+
+### Architecture Standards
+- **Frontend**: Component-first with Material-UI, real-time Supabase subscriptions
+- **Backend**: Broker architecture, DocumentBase pattern, test-first development  
+- **Database**: PostgreSQL with RLS policies, performance optimization
+- **Testing**: Integration-first, Docker-based test environments
+- **Quality**: Security-first, accessibility compliance, performance optimization
+
+### Coordination Patterns
+- **Sequential**: Backend API → Frontend integration
+- **Parallel**: Independent domain work with later integration
+- **Iterative**: MVP → enhancement cycles across domains
+
+## Environment Requirements
+
+### Development Stack
+- **Frontend**: Next.js 14+, Material-UI, TypeScript, Supabase client
+- **Backend**: FastAPI, Python 3.11+, Supabase Python client, pytest
+- **Database**: PostgreSQL via Supabase local stack
+- **Infrastructure**: Docker Compose, local development environment
+
+### Common Commands
+```bash
+# Start full stack
+docker-compose up -d
+
+# Frontend development  
+cd front && npm run dev
+
+# Backend development
+cd back && uvicorn main:app --reload
+
+# Run tests
+cd back && pytest
+```
+
+## Success Metrics
+
+This 3-tier framework ensures:
+
+✅ **Specialized Expertise**: Each agent is an expert in their domain  
+✅ **Intelligent Routing**: Tasks automatically go to the right specialists  
+✅ **Coordinated Development**: Complex features are properly orchestrated  
+✅ **Quality Assurance**: Built-in code review and testing at every tier  
+✅ **Scalable Architecture**: Easy to add new specialists as needed  
+
+The Main Orchestrator (you) provides strategic oversight while domain experts handle tactical implementation, ensuring both architectural coherence and specialized excellence across the full-stack application.

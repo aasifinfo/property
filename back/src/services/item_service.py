@@ -3,7 +3,7 @@
 from typing import List, Optional, Dict, Any
 from src.documents.items.Item import Item
 from src.documents.categories.Category import Category
-from src.models.firestore_types import ItemDoc
+from src.models.supabase_types import ItemDoc
 from src.apis.Db import Db
 from src.util.logger import get_logger
 
@@ -185,7 +185,7 @@ class ItemService:
             items_query = items_query.where("status", "==", status)
         
         if tags:
-            # Firestore limitation: can only use array-contains for one value
+            # PostgreSQL: use array contains operator for tag filtering
             items_query = items_query.where("tags", "array_contains", tags[0])
         
         # Execute query

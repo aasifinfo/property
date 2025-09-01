@@ -1,0 +1,80 @@
+---
+alwaysApply: true
+---
+
+# Backend Development Rules (3-Tier Framework Delegation)
+
+## ⚡ **IMMEDIATE DELEGATION TO 3-TIER FRAMEWORK**
+
+**ALL backend development tasks are handled exclusively through the 3-tier agentic framework.**
+
+### Delegation Flow
+```
+Your Request → Main Orchestrator (Tier 1) → Back Agent (Tier 2) → Backend Specialists (Tier 3)
+```
+
+## How This Works
+
+1. **Main Orchestrator** analyzes your request and determines it's backend-related
+2. **Back Agent** (Tier 2) enforces **MANDATORY** test-first development and coordinates specialists:
+   - `api-dev-agent`: FastAPI route handlers, business logic, Pydantic models
+   - `database-agent`: PostgreSQL schema, RLS policies, migrations, performance
+   - `backend-test-agent`: Integration tests, API testing, test data management
+   - `devops-agent`: Docker environment, service orchestration, monitoring
+   - `deployment-agent`: Production deployments, CI/CD, environment promotion
+
+## What You Should Do
+
+**Simply describe what you want to build** - the framework handles everything else:
+
+```bash
+# Good examples:
+"Create an API for user profile management with proper authentication"
+"Build a search endpoint with pagination and filtering"
+"Add email notification system with database tracking"
+"Implement file upload with progress tracking and validation"
+```
+
+## Architecture Principles (Enforced by Framework)
+
+The 3-tier framework automatically ensures these critical patterns:
+
+- **Test-First Development**: Integration tests created BEFORE implementation
+- **DocumentBase Pattern**: ALL database operations through DocumentBase classes
+- **SupabaseClient Singleton**: Never bypass the SupabaseClient wrapper
+- **Broker Architecture**: Routes organized by feature in `src/brokers/api/`
+- **Type Safety**: Pydantic models for all request/response types
+- **RLS Security**: Row Level Security policies for all database operations
+
+## Framework Benefits
+
+✅ **Test-First Enforcement**: All features are thoroughly tested before implementation  
+✅ **Architecture Compliance**: Framework enforces DocumentBase and broker patterns  
+✅ **Security by Design**: RLS policies and JWT validation built-in  
+✅ **Quality Assurance**: Integration testing with real Supabase database  
+✅ **Performance Optimization**: Database and API performance best practices  
+
+## Critical Requirements (Automatically Enforced)
+
+The framework NEVER allows violations of these rules:
+
+🚫 **No Direct Database Access**: Only DocumentBase classes touch the database  
+🚫 **No Mocked Database Tests**: All tests use real local Supabase stack  
+🚫 **No Implementation Without Tests**: Tests are created first, always  
+🚫 **No Deployment Without Permission**: Deployment requires explicit user approval  
+
+## What NOT To Do
+
+❌ **Don't try to invoke agents directly**: Let the framework route automatically  
+❌ **Don't request implementation details**: Focus on requirements and business logic  
+❌ **Don't bypass test-first workflow**: The framework enforces proper development sequence  
+
+## For More Information
+
+- **Framework Overview**: See `.claude/rules/claude-code-workflow.mdc`
+- **Agent Details**: See `.claude/agents/` for complete agent documentation
+- **Project Documentation**: See `.claude/SUB-AGENTS.md` for usage examples
+
+---
+
+**Describe your backend requirements - the 3-tier framework will implement them with proper testing, architecture, and security!** 🚀

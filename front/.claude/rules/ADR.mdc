@@ -1,0 +1,114 @@
+---
+description: Log of all the key frontend architectural decisions.
+alwaysApply: false
+---
+
+# Architecture Decision Log
+
+<!--
+ADR_AGENT_PROTOCOL v1.0
+
+You (the agent) manage this file as the single source of truth for all ADRs.
+
+INVARIANTS
+- Keep this exact file structure and headings.
+- All ADR entries use H2 headings: "## ADR-FXXX — <Title>" (F + 3-digit zero-padded ID).
+- Allowed Status values: Proposed | Accepted | Superseded
+- Date format: YYYY-MM-DD
+- New entries must be appended to the END of the file.
+- The Index table between the INDEX markers must always reflect the latest state and be sorted by ID desc (newest on top).
+- Each ADR MUST contain: Date, Status, Owner, Context, Decision, Consequences.
+- Each ADR must include an explicit anchor `<a id="adr-fXXX"></a>` so links remain stable.
+
+HOW TO ADD A NEW ADR
+1) Read the whole file.
+2) Compute next ID:
+   - Scan for headings matching: ^## ADR-F(\d{3}) — .+$
+   - next_id = (max captured number) + 1, left-pad to 3 digits.
+3) Create a new ADR section using the "New ADR Entry Template" below.
+   - Place it AFTER the last ADR section in the file.
+   - Add an `<a id="adr-fXXX"></a>` line immediately below the heading.
+4) Update the Index (between the INDEX markers):
+   - Insert/replace the row for this ADR keeping the table sorted by ID descending.
+   - Title in the Index MUST link to the anchor: [<Title>](#adr-fXXX)
+   - If this ADR supersedes another: set "Supersedes" in this row, and update that older ADR:
+       a) Change its Status to "Superseded"
+       b) Add "Superseded by: ADR-FXXX" in its Consequences block
+       c) Update the older ADR's Index row "Superseded by" column to ADR-FXXX
+5) Validate before saving:
+   - Exactly one heading exists for ADR-FXXX
+   - All required fields are present and non-empty
+   - Index contains a row for ADR-FXXX and remains properly sorted
+6) Concurrency resolution:
+   - If a merge conflict or duplicate ID is detected after reading: recompute next_id from the current file state, rename your heading, anchor, and Index row accordingly, and retry once.
+
+COMMIT MESSAGE SUGGESTION
+- "ADR-FXXX: <Short Title> — <Status>"
+
+END ADR_AGENT_PROTOCOL
+-->
+
+## Index
+
+<!-- BEGIN:ADR_INDEX -->
+
+| ID   | Title                                                     | Date       | Status   | Supersedes | Superseded by |
+| ---- | --------------------------------------------------------- | ---------- | -------- | ---------- | ------------- |
+| F001 | [Next.js + Material-UI + Supabase Frontend Stack](#adr-f001) | 2025-08-31 | Accepted | Legacy Firebase ADRs | —             |
+
+<!-- END:ADR_INDEX -->
+
+---
+
+## ADR-F001 — Next.js + Material-UI + Supabase Frontend Stack
+
+<a id="adr-f001"></a>
+**Date**: 2025-08-31  
+**Status**: Accepted  
+**Owner**: AI Agent
+
+### Context
+
+The frontend needed to be migrated from Firebase to Supabase while maintaining a modern, scalable React application architecture. The application required server-side rendering, real-time features, responsive design, and seamless authentication flows.
+
+### Alternatives
+
+- **Next.js + Firebase + Chakra UI**: Keep existing Firebase but use different UI library
+- **Vite + React + Material-UI + Supabase**: Fast build tool but no SSR benefits
+- **Next.js + Material-UI + Supabase**: Full-stack framework with comprehensive UI system
+
+### Decision
+
+Implement Next.js 14 + Material-UI + Supabase frontend stack:
+
+**Core Framework:**
+- Next.js 14 with App Router for modern React patterns and SSR
+- TypeScript throughout for type safety
+- Material-UI (MUI) v5 for comprehensive component library
+- Supabase JavaScript client for database and auth integration
+
+**Architecture Patterns:**
+- **Component-First Design**: Reusable React components with Material-UI foundation
+- **Real-time Integration**: Supabase real-time subscriptions for live data updates
+- **Theme System**: Consistent design system with Material-UI theming
+- **Responsive Design**: Mobile-first approach with MUI breakpoint system
+- **Authentication Context**: React Context for auth state management
+- **API Integration**: Direct Supabase client calls and FastAPI backend integration
+
+**Development Experience:**
+- Hot reload development with Next.js
+- Comprehensive component library with MUI
+- Built-in accessibility features
+- TypeScript integration throughout
+- Real-time development feedback
+
+### Consequences
+
+- **Pros**: Modern React patterns, comprehensive UI system, excellent developer experience, built-in accessibility, server-side rendering benefits, real-time capabilities
+- **Cons**: Learning curve for Next.js App Router, Material-UI styling patterns, larger bundle size than minimal solutions
+- **Supersedes**: Legacy Firebase-based frontend ADRs (002-009 from previous template)
+- **Superseded by**: —
+
+### Compliance / Verification
+
+All frontend components use Material-UI as foundation. Next.js App Router patterns implemented throughout. Supabase client properly integrated for auth and data. TypeScript strict mode enabled. Responsive design verified across breakpoints.

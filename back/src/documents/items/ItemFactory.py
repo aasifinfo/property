@@ -3,7 +3,7 @@
 import csv
 import json
 from typing import List, Dict, Any, Optional
-from src.models.firestore_types import ItemDoc
+from src.models.supabase_types import ItemDoc
 from src.apis.Db import Db
 from src.util.logger import get_logger
 
@@ -161,6 +161,86 @@ class ItemFactory:
         
         logger.info(f"Batch created {len(items)} items")
         return items
+
+    async def create_item(
+        self,
+        name: str,
+        description: Optional[str] = None,
+        category_id: Optional[str] = None,
+        tags: Optional[List[str]] = None,
+        metadata: Optional[Dict[str, Any]] = None,
+        owner_uid: Optional[str] = None
+    ) -> "Item":
+        """Create a single item and return Item instance.
+        
+        Args:
+            name: Item name
+            description: Item description
+            category_id: Category ID
+            tags: Item tags
+            metadata: Item metadata
+            owner_uid: Owner user ID (uses factory default if not provided)
+            
+        Returns:
+            Item instance
+        """
+        from src.documents.items.Item import Item
+        
+        # Use provided owner_uid or factory default
+        owner = owner_uid or self.user_id
+        category = category_id or self.category_id
+        
+        doc_ref = self.db.collections["items"].document()
+        
+        item_doc = ItemDoc(
+            id=doc_ref.id,
+            name=name,
+            description=description,
+            categoryId=category,
+            ownerUid=owner,
+            status="active",
+            tags=tags or [],
+            metadata=metadata or {},
+            createdAt=self.db.get_created_at(),
+            lastUpdatedAt=self.db.get_created_at(),
+        )
+        
+        # Save to Supabase database
+        doc_ref.set(item_doc.model_dump())
+        
+        # Return Item instance
+        item = Item(doc_ref.id, item_doc.model_dump())
+        
+        logger.info(f"Created item {doc_ref.id} for user {owner}")
+        return item
+
+    async def get_items_for_user(self, user_id: str) -> List["Item"]:
+        """Get all items for a specific user.
+        
+        Args:
+            user_id: User ID to get items for
+            
+        Returns:
+            List of Item instances
+        """
+        from src.documents.items.Item import Item
+        
+        items_query = (
+            self.db.collections["items"]
+            .where("ownerUid", "==", user_id)
+            .where("status", "==", "active")
+            .order_by("lastUpdatedAt", direction="DESCENDING")
+        )
+        
+        item_docs = items_query.get()
+        items = []
+        
+        for item_doc in item_docs:
+            item = Item(item_doc.id, item_doc.to_dict())
+            items.append(item)
+        
+        logger.info(f"Retrieved {len(items)} items for user {user_id}")
+        return items
     
     def _create_item_from_row(self, row: Dict[str, str]) -> ItemDoc:
         """Create an ItemDoc from a CSV row.
@@ -246,7 +326,7 @@ class ItemFactory:
             lastUpdatedAt=self.db.get_created_at(),
         )
         
-        # Save to Firestore
+        # Save to Supabase database
         doc_ref.set(item.model_dump())
         
         return item
