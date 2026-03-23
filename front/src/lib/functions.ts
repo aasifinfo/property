@@ -11,7 +11,7 @@ export interface ExampleResponse {
   result: string;
 }
 
-// API functions wrapper - replaces Firebase Functions with FastAPI backend calls
+// API functions wrapper for FastAPI backend calls
 export const apiFunctions = {
   // Example API function
   exampleFunction: async (data: ExampleRequest): Promise<ExampleResponse> => {
@@ -62,7 +62,7 @@ export const apiFunctions = {
   },
 };
 
-// Generic API function helper - replaces callable functions pattern
+// Generic API function helper
 export async function callAPI<TRequest, TResponse>(
   endpoint: string,
   method: "GET" | "POST" | "PUT" | "DELETE" = "POST",
@@ -82,12 +82,12 @@ export async function callAPI<TRequest, TResponse>(
   }
 }
 
-// Backward compatibility - map old callFunction to new API structure
+// Backward compatibility helper for legacy function names
 export async function callFunction<TRequest, TResponse>(
   functionName: string,
   data: TRequest
 ): Promise<TResponse> {
-  // Map old Firebase function names to new API endpoints
+  // Map legacy function names to API endpoints
   const endpointMap: { [key: string]: string } = {
     exampleFunction: "/api/example",
     getUserProfile: "/api/users/profile",

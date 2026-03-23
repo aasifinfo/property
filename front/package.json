@@ -1,7 +1,7 @@
 {
-  "name": "next-js-firebase-template",
+  "name": "nextjs-supabase-ai-template-front",
   "version": "1.0.0",
-  "description": "Next.js Firebase Template",
+  "description": "Next.js Supabase frontend",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -32,8 +32,11 @@
     "@types/node": "^20.8.2",
     "@types/react": "^18.2.0",
     "@types/react-dom": "^18.2.0",
+    "autoprefixer": "^10.4.27",
     "eslint": "^8.50.0",
     "eslint-config-next": "^14.2.13",
+    "postcss": "^8.5.8",
+    "tailwindcss": "^3.4.17",
     "typescript": "^5.2.2"
   }
 }

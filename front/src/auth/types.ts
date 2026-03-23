@@ -1,4 +1,5 @@
-import type { User } from "@supabase/supabase-js";
+﻿import type { User } from "@supabase/supabase-js";
+import { Agency, BrokerProfile, PlatformUser, UserRole, UserStatus } from "@/lib/deal-types";
 
 export interface AuthUser {
   uid: string;
@@ -7,9 +8,15 @@ export interface AuthUser {
   photoURL: string | null;
   emailVerified: boolean;
   isAnonymous: boolean;
+  role: UserRole | null;
+  status: UserStatus | null;
+  firstName: string | null;
+  lastName: string | null;
+  platformUser: PlatformUser | null;
+  brokerProfile: BrokerProfile | null;
+  agency: Agency | null;
 }
 
-// Supabase auth user type
 export type SupabaseAuthUser = User;
 
 export interface AuthState {
@@ -17,3 +24,4 @@ export interface AuthState {
   loading: boolean;
   error: Error | null;
 }
+

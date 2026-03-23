@@ -4,5 +4,10 @@ export const SUPABASE_CONFIG = {
 };
 
 export const API_CONFIG = {
-  baseUrl: process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000",
+  baseUrl: process.env.NEXT_PUBLIC_API_BASE_URL || "",
+};
+
+export const APP_CONFIG = {
+  appName: "Deal Exchange Platform",
+  whatsappPrefix: process.env.NEXT_PUBLIC_WHATSAPP_PREFIX || "https://wa.me/",
 };

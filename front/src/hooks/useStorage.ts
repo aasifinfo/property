@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useCallback, useEffect } from "react";
 import { storageOperations } from "@/lib/storage";
@@ -19,80 +19,38 @@ export function useFileUpload() {
   });
 
   const uploadFile = useCallback(async (userId: string, file: File) => {
-    setUploadState({
-      status: "uploading",
-      progress: 0,
-      error: null,
-      downloadURL: null,
-    });
+    setUploadState({ status: "uploading", progress: 0, error: null, downloadURL: null });
 
     try {
-      const { uploadTask, promise } = storageOperations.uploadFileWithProgress(
-        userId,
-        file,
-        (progress) => {
-          setUploadState(prev => ({ ...prev, progress }));
-        }
-      );
+      const { uploadPromise } = storageOperations.uploadFileWithProgress(userId, file, (progress) => {
+        setUploadState((prev) => ({ ...prev, progress: progress.progress }));
+      });
 
-      const url = await promise;
-      
-      setUploadState({
-        status: "success",
-        progress: 100,
-        error: null,
-        downloadURL: url,
-      });
-      
+      const url = await uploadPromise;
+      setUploadState({ status: "success", progress: 100, error: null, downloadURL: url });
       return url;
-    } catch (err: any) {
-      setUploadState({
-        status: "error",
-        progress: 0,
-        error: err.message,
-        downloadURL: null,
-      });
-      throw err;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Upload failed";
+      setUploadState({ status: "error", progress: 0, error: message, downloadURL: null });
+      throw error;
     }
   }, []);
 
   const uploadAvatar = useCallback(async (userId: string, file: File) => {
-    setUploadState({
-      status: "uploading",
-      progress: 0,
-      error: null,
-      downloadURL: null,
-    });
-
+    setUploadState({ status: "uploading", progress: 0, error: null, downloadURL: null });
     try {
       const url = await storageOperations.uploadAvatar(userId, file);
-      
-      setUploadState({
-        status: "success",
-        progress: 100,
-        error: null,
-        downloadURL: url,
-      });
-      
+      setUploadState({ status: "success", progress: 100, error: null, downloadURL: url });
       return url;
-    } catch (err: any) {
-      setUploadState({
-        status: "error",
-        progress: 0,
-        error: err.message,
-        downloadURL: null,
-      });
-      throw err;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Avatar upload failed";
+      setUploadState({ status: "error", progress: 0, error: message, downloadURL: null });
+      throw error;
     }
   }, []);
 
   const reset = useCallback(() => {
-    setUploadState({
-      status: "idle",
-      progress: 0,
-      error: null,
-      downloadURL: null,
-    });
+    setUploadState({ status: "idle", progress: 0, error: null, downloadURL: null });
   }, []);
 
   return {
@@ -100,7 +58,6 @@ export function useFileUpload() {
     uploadFile,
     uploadAvatar,
     reset,
-    // Computed properties for convenience
     isUploading: uploadState.status === "uploading",
     isSuccess: uploadState.status === "success",
     isError: uploadState.status === "error",
@@ -112,46 +69,43 @@ export function useFileDownload() {
   const [status, setStatus] = useState<"idle" | "downloading" | "success" | "error">("idle");
   const [error, setError] = useState<string | null>(null);
 
-  const downloadFile = useCallback(async (filePath: string, fileName?: string) => {
+  const downloadFile = useCallback(async (bucket: string, filePath: string, fileName?: string) => {
     setStatus("downloading");
     setError(null);
 
     try {
-      const url = await storageOperations.getDownloadURL(filePath);
-      
-      // Create download link
-      const link = document.createElement('a');
+      const url = storageOperations.getPublicUrl(bucket, filePath);
+      const link = document.createElement("a");
       link.href = url;
-      link.download = fileName || 'download';
-      link.target = '_blank';
-      
-      // Trigger download
+      link.download = fileName || "download";
+      link.target = "_blank";
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      
       setStatus("success");
       return url;
-    } catch (err: any) {
-      setError(err.message);
+    } catch (downloadError) {
+      const message = downloadError instanceof Error ? downloadError.message : "Download failed";
+      setError(message);
       setStatus("error");
-      throw err;
+      throw downloadError;
     }
   }, []);
 
-  const openFile = useCallback(async (filePath: string) => {
+  const openFile = useCallback(async (bucket: string, filePath: string) => {
     setStatus("downloading");
     setError(null);
 
     try {
-      const url = await storageOperations.getDownloadURL(filePath);
-      window.open(url, '_blank');
+      const url = storageOperations.getPublicUrl(bucket, filePath);
+      window.open(url, "_blank");
       setStatus("success");
       return url;
-    } catch (err: any) {
-      setError(err.message);
+    } catch (openError) {
+      const message = openError instanceof Error ? openError.message : "Open failed";
+      setError(message);
       setStatus("error");
-      throw err;
+      throw openError;
     }
   }, []);
 
@@ -167,28 +121,23 @@ export function useFileDownload() {
   };
 }
 
-// Hook for listing files in a folder
-export function useFileList(folderPath: string) {
-  const [files, setFiles] = useState<string[]>([]);
+export function useFileList(userId: string) {
+  const [files, setFiles] = useState<Array<{ name: string; url: string; size?: number; created_at?: string }>>([]);
   const [status, setStatus] = useState<"loading" | "error" | "success">("loading");
 
   const refreshFiles = useCallback(async () => {
-    if (!folderPath) return;
-    
+    if (!userId) return;
     setStatus("loading");
-    
     try {
-      const fileUrls = await storageOperations.listFiles(folderPath);
+      const fileUrls = await storageOperations.listUserFiles(userId);
       setFiles(fileUrls);
       setStatus("success");
-    } catch (error) {
-      console.error("Error listing files:", error);
+    } catch (_error) {
       setFiles([]);
       setStatus("error");
     }
-  }, [folderPath]);
+  }, [userId]);
 
-  // Auto-refresh on mount and path change
   useEffect(() => {
     refreshFiles();
   }, [refreshFiles]);
