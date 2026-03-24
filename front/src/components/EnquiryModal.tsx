@@ -1,9 +1,10 @@
-﻿"use client";
+"use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useMemo, useState } from "react";
 import { useSnackbar } from "notistack";
 import { apiFetch } from "@/lib/deal-api";
 import { Requirement, Listing } from "@/lib/deal-types";
+import { getMailtoLink, getWhatsappLink } from "@/lib/deal-utils";
 
 type Subject =
   | { kind: "listing"; listing: Listing }
@@ -25,6 +26,11 @@ export function EnquiryModal({
   const [contactPhone, setContactPhone] = useState("");
   const [preferredChannel, setPreferredChannel] = useState<"both" | "email" | "whatsapp">("both");
   const [message, setMessage] = useState("");
+
+  const target = useMemo(() => {
+    if (!subject) return null;
+    return subject.kind === "listing" ? subject.listing.owner : subject.requirement.owner;
+  }, [subject]);
 
   if (!open || !subject) return null;
 
@@ -49,8 +55,22 @@ export function EnquiryModal({
           message,
         }),
       });
-      enqueueSnackbar("Enquiry sent. Email and WhatsApp triggers were logged.", { variant: "success" });
+
+      const outboundMessage = `${contactName} (${contactEmail}${contactPhone ? `, ${contactPhone}` : ""}) sent an enquiry about ${title}.\n\n${message}`;
+      if ((preferredChannel === "email" || preferredChannel === "both") && target?.email) {
+        window.open(getMailtoLink(target.email, `Deal Exchange enquiry: ${title}`, outboundMessage), "_blank", "noopener,noreferrer");
+      }
+      if ((preferredChannel === "whatsapp" || preferredChannel === "both") && target?.phone) {
+        window.open(getWhatsappLink(target.phone, outboundMessage), "_blank", "noopener,noreferrer");
+      }
+
+      enqueueSnackbar("Enquiry sent and handoff opened for the selected contact channel.", { variant: "success" });
       onClose();
+      setContactName("");
+      setContactEmail("");
+      setContactPhone("");
+      setPreferredChannel("both");
+      setMessage("");
     } catch (error) {
       enqueueSnackbar(error instanceof Error ? error.message : "Failed to send enquiry.", { variant: "error" });
     } finally {
@@ -65,6 +85,7 @@ export function EnquiryModal({
           <div>
             <p className="text-sm font-semibold uppercase tracking-[0.3em] text-brand-orange">Connect Broker</p>
             <h3 className="mt-2 text-2xl font-semibold text-brand-navy">{title}</h3>
+            <p className="mt-2 text-sm text-brand-slate">Lead capture is stored in the admin log, then handed off through email, WhatsApp, or both.</p>
           </div>
           <button onClick={onClose} className="btn-secondary">Close</button>
         </div>
@@ -87,7 +108,7 @@ export function EnquiryModal({
             </div>
             <div>
               <label className="label">Preferred channel</label>
-              <select className="input" value={preferredChannel} onChange={(event) => setPreferredChannel(event.target.value as any)}>
+              <select className="input" value={preferredChannel} onChange={(event) => setPreferredChannel(event.target.value as "both" | "email" | "whatsapp")}>
                 <option value="both">Email + WhatsApp</option>
                 <option value="email">Email only</option>
                 <option value="whatsapp">WhatsApp only</option>
@@ -108,4 +129,3 @@ export function EnquiryModal({
     </div>
   );
 }
-

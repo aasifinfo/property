@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -59,7 +59,7 @@ export default function HomePage() {
               </p>
               <div className="mt-8 flex flex-wrap gap-3">
                 <Link href={user ? "/dashboard" : "/apply"} className="btn-accent">
-                  {user ? "Open Workspace" : "Apply for Access"}
+                  {user ? "Open Workspace" : "Request Broker Access"}
                 </Link>
                 <Link href="/signin" className="btn-secondary border-white/30 bg-white/10 text-white hover:border-white">
                   Broker Login
@@ -100,7 +100,7 @@ export default function HomePage() {
         </div>
         <div className="grid gap-6 lg:grid-cols-3">
           {(overview.recentListings.length ? overview.recentListings : mockListings).slice(0, 3).map((listing) => (
-            <ListingCard key={listing.id} listing={listing} />
+            <ListingCard key={listing.id} listing={listing} interactive={false} />
           ))}
         </div>
       </section>
@@ -108,7 +108,7 @@ export default function HomePage() {
       <section className="shell py-10">
         <div className="panel p-8 lg:p-10">
           <p className="text-sm font-semibold uppercase tracking-[0.3em] text-brand-orange">How it works</p>
-          <div className="mt-8 grid gap-5 md:grid-cols-3">
+          <div className="mt-8 grid gap-5 md:grid-cols-4">
             <div className="subtle-panel p-5">
               <p className="text-sm font-semibold uppercase tracking-[0.24em] text-brand-slate">01</p>
               <h3 className="mt-3 text-xl font-semibold text-brand-navy">Apply and get approved</h3>
@@ -116,13 +116,18 @@ export default function HomePage() {
             </div>
             <div className="subtle-panel p-5">
               <p className="text-sm font-semibold uppercase tracking-[0.24em] text-brand-slate">02</p>
-              <h3 className="mt-3 text-xl font-semibold text-brand-navy">Post or discover opportunities</h3>
-              <p className="mt-3 text-sm leading-6 text-brand-slate">Approved brokers can list off-market stock, browse filtered inventory, and monitor buyer briefs.</p>
+              <h3 className="mt-3 text-xl font-semibold text-brand-navy">Browse vetted inventory</h3>
+              <p className="mt-3 text-sm leading-6 text-brand-slate">Approved brokers can search moderated off-market stock without trawling chat groups.</p>
             </div>
             <div className="subtle-panel p-5">
               <p className="text-sm font-semibold uppercase tracking-[0.24em] text-brand-slate">03</p>
-              <h3 className="mt-3 text-xl font-semibold text-brand-navy">Move faster on co-broke deals</h3>
-              <p className="mt-3 text-sm leading-6 text-brand-slate">Enquiries create structured lead records and notification triggers instead of buried chat threads.</p>
+              <h3 className="mt-3 text-xl font-semibold text-brand-navy">Post buyer mandates</h3>
+              <p className="mt-3 text-sm leading-6 text-brand-slate">Share anonymised buyer requirements so the network can surface relevant opportunities fast.</p>
+            </div>
+            <div className="subtle-panel p-5">
+              <p className="text-sm font-semibold uppercase tracking-[0.24em] text-brand-slate">04</p>
+              <h3 className="mt-3 text-xl font-semibold text-brand-navy">Close co-broke deals faster</h3>
+              <p className="mt-3 text-sm leading-6 text-brand-slate">Enquiries create structured lead records and direct contact handoff through email and WhatsApp.</p>
             </div>
           </div>
         </div>
@@ -144,4 +149,3 @@ export default function HomePage() {
     </div>
   );
 }
-

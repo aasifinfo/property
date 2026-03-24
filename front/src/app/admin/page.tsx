@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -76,30 +76,27 @@ export default function AdminPage() {
 
   return (
     <AppShell title="Admin Panel" subtitle="Approve brokers and listings, manage network access, inspect activity, and export lead flow.">
-      <div className="grid gap-4 lg:grid-cols-5">
+      <div className="grid gap-4 lg:grid-cols-6">
         <StatCard label="Approved Brokers" value={overview.metrics.approvedBrokers} helper="Live approved broker accounts." />
         <StatCard label="Total Listings" value={overview.metrics.totalListings} helper="All listing records in the exchange." />
         <StatCard label="Total Leads" value={overview.metrics.totalLeads} helper="Structured enquiries and requirement matches." />
         <StatCard label="Applications" value={overview.metrics.pendingApplications} helper="Broker applications waiting for review." />
         <StatCard label="Pending Listings" value={overview.metrics.pendingListings} helper="Inventory waiting for moderation." />
+        <StatCard label="Expiring Soon" value={overview.metrics.expiringListings} helper="Approved listings due for renewal within 7 days." />
       </div>
 
       <section className="mt-10 grid gap-8 xl:grid-cols-2">
         <div className="panel p-6">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <p className="text-sm font-semibold uppercase tracking-[0.3em] text-brand-orange">Broker applications</p>
-              <h2 className="mt-2 text-2xl font-bold text-brand-navy">Approve or reject access</h2>
-            </div>
-          </div>
+          <p className="text-sm font-semibold uppercase tracking-[0.3em] text-brand-orange">Broker applications</p>
+          <h2 className="mt-2 text-2xl font-bold text-brand-navy">Approve or reject access</h2>
           <div className="mt-6 space-y-4">
             {overview.applications.length ? overview.applications.map((application: any) => (
               <div key={application.id} className="subtle-panel p-4">
                 <div className="flex items-start justify-between gap-4">
                   <div>
                     <p className="text-lg font-semibold text-brand-navy">{getFullName(application.first_name, application.last_name)}</p>
-                    <p className="text-sm text-brand-slate">{application.email} · {application.phone}</p>
-                    <p className="mt-2 text-sm text-brand-slate">{application.agency?.name || "Agency pending"} · {application.brokerProfile?.speciality || "Broker"}</p>
+                    <p className="text-sm text-brand-slate">{application.email} - {application.phone}</p>
+                    <p className="mt-2 text-sm text-brand-slate">{application.agency?.name || "Agency pending"} - {application.brokerProfile?.speciality || "Broker"}</p>
                   </div>
                   <span className={statusClasses(application.status)}>{application.status}</span>
                 </div>
@@ -114,19 +111,21 @@ export default function AdminPage() {
 
         <div className="panel p-6">
           <p className="text-sm font-semibold uppercase tracking-[0.3em] text-brand-orange">Listing moderation</p>
-          <h2 className="mt-2 text-2xl font-bold text-brand-navy">Approve or reject inventory</h2>
+          <h2 className="mt-2 text-2xl font-bold text-brand-navy">Approve, reject, or request changes</h2>
           <div className="mt-6 space-y-4">
             {overview.pendingListings.length ? overview.pendingListings.map((listing: any) => (
               <div key={listing.id} className="subtle-panel p-4">
                 <div className="flex items-start justify-between gap-4">
                   <div>
                     <p className="text-lg font-semibold text-brand-navy">{listing.title}</p>
-                    <p className="text-sm text-brand-slate">{formatCurrency(listing.price)} · Submitted {formatDate(listing.created_at)}</p>
+                    <p className="text-sm text-brand-slate">{formatCurrency(listing.price)} - Submitted {formatDate(listing.created_at)}</p>
+                    <p className="mt-2 text-sm text-brand-slate">{getFullName(listing.owner?.first_name, listing.owner?.last_name)} - {listing.agency?.name || "No agency"}</p>
                   </div>
                   <span className={statusClasses(listing.status)}>{listing.status}</span>
                 </div>
                 <div className="mt-4 flex flex-wrap gap-3">
                   <button className="btn-primary" onClick={() => runAction("approve_listing", listing.id)}>Approve</button>
+                  <button className="btn-secondary" onClick={() => runAction("request_listing_changes", listing.id)}>Request Changes</button>
                   <button className="btn-secondary" onClick={() => runAction("reject_listing", listing.id)}>Reject</button>
                 </div>
               </div>
@@ -145,19 +144,43 @@ export default function AdminPage() {
             <button className="btn-primary" onClick={exportLeads}>Export Leads CSV</button>
           </div>
           <div className="mt-6 space-y-4">
-            {overview.brokers.map((broker: any) => (
-              <div key={broker.id} className="subtle-panel flex flex-col gap-4 p-4 md:flex-row md:items-center md:justify-between">
-                <div>
-                  <p className="text-lg font-semibold text-brand-navy">{getFullName(broker.first_name, broker.last_name)}</p>
-                  <p className="text-sm text-brand-slate">{broker.email} · {broker.agency?.name || "No agency"}</p>
-                </div>
-                <div className="flex flex-wrap items-center gap-3">
-                  <span className={statusClasses(broker.status)}>{broker.status}</span>
-                  <button className="btn-secondary" onClick={() => runAction("suspend_broker", broker.id)}>Suspend</button>
-                  <button className="btn-secondary" onClick={() => runAction("deactivate_broker", broker.id)}>Deactivate</button>
+            {overview.brokers.length ? overview.brokers.map((broker: any) => (
+              <div key={broker.id} className="subtle-panel p-5">
+                <div className="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-3">
+                      <p className="text-lg font-semibold text-brand-navy">{getFullName(broker.first_name, broker.last_name)}</p>
+                      <span className={statusClasses(broker.status)}>{broker.status}</span>
+                    </div>
+                    <div className="mt-4 grid gap-3 text-sm text-brand-slate sm:grid-cols-2">
+                      <div className="rounded-2xl border border-brand-line/50 bg-slate-50/80 px-4 py-3">
+                        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-slate/80">Contact</p>
+                        <p className="mt-2 break-all font-medium text-brand-ink">{broker.email}</p>
+                        <p className="mt-1">{broker.phone || broker.brokerProfile?.whatsapp_number || "No phone provided"}</p>
+                      </div>
+                      <div className="rounded-2xl border border-brand-line/50 bg-slate-50/80 px-4 py-3">
+                        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-slate/80">Agency</p>
+                        <p className="mt-2 font-medium text-brand-ink">{broker.agency?.name || "No agency"}</p>
+                        <p className="mt-1">{broker.brokerProfile?.speciality || "Speciality not provided"}</p>
+                      </div>
+                      <div className="rounded-2xl border border-brand-line/50 bg-slate-50/80 px-4 py-3 sm:col-span-2">
+                        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-slate/80">Profile</p>
+                        <p className="mt-2 font-medium text-brand-ink">Joined {formatDate(broker.created_at)}</p>
+                        <p className="mt-1">
+                          {typeof broker.brokerProfile?.experience_years === "number"
+                            ? `${broker.brokerProfile.experience_years} years experience`
+                            : "Experience not provided"}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex w-full flex-col gap-3 sm:flex-row xl:w-auto xl:flex-col">
+                    <button className="btn-secondary w-full xl:min-w-[10rem]" onClick={() => runAction("suspend_broker", broker.id)}>Suspend</button>
+                    <button className="btn-secondary w-full xl:min-w-[10rem]" onClick={() => runAction("deactivate_broker", broker.id)}>Deactivate</button>
+                  </div>
                 </div>
               </div>
-            ))}
+            )) : <EmptyState title="No brokers found" description="Approved and pending broker accounts will appear here for management actions." />}
           </div>
         </div>
 
@@ -172,14 +195,29 @@ export default function AdminPage() {
                   <p className="text-xs uppercase tracking-[0.2em] text-brand-slate">{formatDate(log.created_at)}</p>
                 </div>
                 <p className="mt-2 text-sm text-brand-slate">
-                  {log.actor ? `${getFullName(log.actor.first_name, log.actor.last_name)} · ${log.actor.email}` : "System event"}
+                  {log.actor ? `${getFullName(log.actor.first_name, log.actor.last_name)} - ${log.actor.email}` : "System event"}
                 </p>
               </div>
             )) : <EmptyState title="No activity yet" description="Administrative events will appear here once the workflow is used." />}
           </div>
         </div>
       </section>
+
+      <section className="mt-10 panel p-6">
+        <p className="text-sm font-semibold uppercase tracking-[0.3em] text-brand-orange">Expiring listings</p>
+        <h2 className="mt-2 text-2xl font-bold text-brand-navy">Approved inventory due for reconfirmation</h2>
+        <div className="mt-6 space-y-4">
+          {overview.expiringListings.length ? overview.expiringListings.map((listing: any) => (
+            <div key={listing.id} className="subtle-panel flex flex-col gap-3 p-4 md:flex-row md:items-center md:justify-between">
+              <div>
+                <p className="text-lg font-semibold text-brand-navy">{listing.title}</p>
+                <p className="text-sm text-brand-slate">{getFullName(listing.owner?.first_name, listing.owner?.last_name)} - {listing.agency?.name || "No agency"}</p>
+              </div>
+              <div className="text-sm text-brand-slate">Renewal due {formatDate(listing.renewal_due_at)}</div>
+            </div>
+          )) : <EmptyState title="No expiring listings" description="Approved listings that are due for reconfirmation within 7 days will appear here." />}
+        </div>
+      </section>
     </AppShell>
   );
 }
-

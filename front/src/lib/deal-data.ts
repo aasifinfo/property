@@ -1,7 +1,6 @@
-﻿"use client";
+"use client";
 
 import { supabase } from "@/lib/supabase";
-import { mockListings, mockRequirements } from "@/lib/deal-constants";
 import {
   Area,
   CommissionTerms,
@@ -12,8 +11,11 @@ import {
   ListingImage,
   PlatformUser,
   Requirement,
+  RequirementFormValues,
 } from "@/lib/deal-types";
-import { parseNumber } from "@/lib/deal-utils";
+import { getRenewalMeta, parseNumber } from "@/lib/deal-utils";
+
+const DAY_IN_MS = 24 * 60 * 60 * 1000;
 
 export interface ListingFilters {
   dealType?: string;
@@ -22,6 +24,7 @@ export interface ListingFilters {
   propertyType?: string;
   minPrice?: string;
   maxPrice?: string;
+  search?: string;
   sort?: "newest" | "price_asc" | "price_desc" | "co_broke_desc";
 }
 
@@ -59,6 +62,13 @@ async function hydrateListings(baseListings: Listing[]): Promise<Listing[]> {
     supabase.from("listing_documents").select("id, listing_id, file_name, storage_path, public_url").in("listing_id", listingIds),
   ]);
 
+  const ownerListingCounts = new Map<string, number>();
+  baseListings.forEach((listing) => {
+    if (listing.status === "approved") {
+      ownerListingCounts.set(listing.created_by, (ownerListingCounts.get(listing.created_by) || 0) + 1);
+    }
+  });
+
   const areaMap = new Map((areasResult.data || []).map((area) => [area.id, area]));
   const ownerMap = new Map((ownersResult.data || []).map((owner) => [owner.id, owner]));
   const agencyMap = new Map((agenciesResult.data || []).map((agency) => [agency.id, agency]));
@@ -82,6 +92,32 @@ async function hydrateListings(baseListings: Listing[]): Promise<Listing[]> {
     commission_terms: termsMap.get(listing.id) || null,
     listing_images: imagesMap.get(listing.id) || [],
     listing_documents: documentsMap.get(listing.id) || [],
+    owner_active_listings_count: ownerListingCounts.get(listing.created_by) || null,
+  }));
+}
+
+async function hydrateRequirements(baseRequirements: Requirement[]): Promise<Requirement[]> {
+  if (!baseRequirements.length) return [];
+
+  const areaIds = Array.from(new Set(baseRequirements.map((requirement) => requirement.area_id).filter(Boolean))) as string[];
+  const ownerIds = Array.from(new Set(baseRequirements.map((requirement) => requirement.posted_by)));
+  const [areasResult, ownersResult] = await Promise.all([
+    areaIds.length ? supabase.from("areas").select("id, name, city, slug").in("id", areaIds) : Promise.resolve({ data: [] as Area[] }),
+    ownerIds.length
+      ? supabase
+          .from("users")
+          .select("id, email, first_name, last_name, phone, role, status, agency_id, created_at, updated_at")
+          .in("id", ownerIds)
+      : Promise.resolve({ data: [] as PlatformUser[] }),
+  ]);
+
+  const areaMap = new Map((areasResult.data || []).map((area) => [area.id, area]));
+  const ownerMap = new Map((ownersResult.data || []).map((owner) => [owner.id, owner]));
+
+  return baseRequirements.map((requirement) => ({
+    ...requirement,
+    area: requirement.area_id ? areaMap.get(requirement.area_id) || null : null,
+    owner: ownerMap.get(requirement.posted_by) || null,
   }));
 }
 
@@ -99,6 +135,10 @@ export async function fetchListings(filters: ListingFilters = {}): Promise<Listi
   if (filters.propertyType) query = query.eq("property_type", filters.propertyType);
   if (filters.minPrice) query = query.gte("price", Number(filters.minPrice));
   if (filters.maxPrice) query = query.lte("price", Number(filters.maxPrice));
+  if (filters.search) {
+    const escaped = filters.search.replace(/,/g, " ");
+    query = query.or(`title.ilike.%${escaped}%,developer.ilike.%${escaped}%,description.ilike.%${escaped}%`);
+  }
 
   switch (filters.sort) {
     case "price_asc":
@@ -113,7 +153,7 @@ export async function fetchListings(filters: ListingFilters = {}): Promise<Listi
   }
 
   const { data, error } = await query;
-  if (error || !data) return mockListings;
+  if (error || !data) return [];
 
   const hydrated = await hydrateListings(data as Listing[]);
   if (filters.sort === "co_broke_desc") {
@@ -133,11 +173,20 @@ export async function fetchListingById(id: string): Promise<Listing | null> {
     .maybeSingle();
 
   if (error || !data) {
-    return mockListings.find((listing) => listing.id === id) || null;
+    return null;
   }
 
   const [listing] = await hydrateListings([data as Listing]);
-  return listing;
+  const { count } = await supabase
+    .from("listings")
+    .select("id", { count: "exact", head: true })
+    .eq("created_by", data.created_by)
+    .eq("status", "approved");
+
+  return {
+    ...listing,
+    owner_active_listings_count: count || 0,
+  };
 }
 
 export async function fetchRequirements(filters: RequirementFilters = {}): Promise<Requirement[]> {
@@ -152,37 +201,35 @@ export async function fetchRequirements(filters: RequirementFilters = {}): Promi
   if (filters.maxBudget) query = query.lte("budget_min", Number(filters.maxBudget));
 
   const { data, error } = await query;
-  if (error || !data?.length) return mockRequirements;
+  if (error || !data) return [];
 
-  const areaIds = Array.from(new Set(data.map((requirement) => requirement.area_id).filter(Boolean))) as string[];
-  const ownerIds = Array.from(new Set(data.map((requirement) => requirement.posted_by)));
-  const [areasResult, ownersResult] = await Promise.all([
-    areaIds.length ? supabase.from("areas").select("id, name, city, slug").in("id", areaIds) : Promise.resolve({ data: [] as Area[] }),
-    ownerIds.length
-      ? supabase
-          .from("users")
-          .select("id, email, first_name, last_name, phone, role, status, agency_id, created_at, updated_at")
-          .in("id", ownerIds)
-      : Promise.resolve({ data: [] as PlatformUser[] }),
-  ]);
-
-  const areaMap = new Map((areasResult.data || []).map((area) => [area.id, area]));
-  const ownerMap = new Map((ownersResult.data || []).map((owner) => [owner.id, owner]));
-
-  return (data as Requirement[]).map((requirement) => ({
-    ...requirement,
-    area: requirement.area_id ? areaMap.get(requirement.area_id) || null : null,
-    owner: ownerMap.get(requirement.posted_by) || null,
-  }));
+  return hydrateRequirements(data as Requirement[]);
 }
 
-export async function fetchDashboardData(userId: string, coveredAreaIds: string[] = []): Promise<{ metrics: DashboardMetrics; recentListings: Listing[]; matchedRequirements: Requirement[] }> {
+export async function fetchDashboardData(
+  userId: string,
+  coveredAreaIds: string[] = []
+): Promise<{ metrics: DashboardMetrics; recentListings: Listing[]; matchedRequirements: Requirement[]; renewalListings: Listing[] }> {
+  const requirementQuery = coveredAreaIds.length
+    ? supabase
+        .from("requirements")
+        .select("id, title, deal_type, property_type, bedrooms, area_id, budget_min, budget_max, urgency, notes, created_at, posted_by")
+        .in("area_id", coveredAreaIds)
+        .order("created_at", { ascending: false })
+        .limit(4)
+    : supabase
+        .from("requirements")
+        .select("id, title, deal_type, property_type, bedrooms, area_id, budget_min, budget_max, urgency, notes, created_at, posted_by")
+        .order("created_at", { ascending: false })
+        .limit(4);
+
   const [
     myListingsResult,
     enquiriesResult,
     pendingResult,
     recentListingsResult,
     requirementsResult,
+    renewalListingsResult,
   ] = await Promise.all([
     supabase.from("listings").select("id", { count: "exact", head: true }).eq("created_by", userId),
     supabase.from("leads").select("id", { count: "exact", head: true }).eq("to_user_id", userId),
@@ -192,40 +239,41 @@ export async function fetchDashboardData(userId: string, coveredAreaIds: string[
       .select(
         "id, title, property_type, deal_type, bedrooms, size_sqft, area_id, developer, price, payment_plan, handover_date, yield_percent, description, status, created_at, updated_at, created_by, agency_id, renewal_due_at, approved_at"
       )
+      .eq("created_by", userId)
+      .order("updated_at", { ascending: false })
+      .limit(3),
+    requirementQuery,
+    supabase
+      .from("listings")
+      .select(
+        "id, title, property_type, deal_type, bedrooms, size_sqft, area_id, developer, price, payment_plan, handover_date, yield_percent, description, status, created_at, updated_at, created_by, agency_id, renewal_due_at, approved_at"
+      )
+      .eq("created_by", userId)
       .eq("status", "approved")
-      .order("created_at", { ascending: false })
-      .limit(4),
-    coveredAreaIds.length
-      ? supabase
-          .from("requirements")
-          .select("id, title, deal_type, property_type, bedrooms, area_id, budget_min, budget_max, urgency, notes, created_at, posted_by")
-          .in("area_id", coveredAreaIds)
-          .order("created_at", { ascending: false })
-          .limit(4)
-      : supabase
-          .from("requirements")
-          .select("id, title, deal_type, property_type, bedrooms, area_id, budget_min, budget_max, urgency, notes, created_at, posted_by")
-          .order("created_at", { ascending: false })
-          .limit(4),
+      .not("renewal_due_at", "is", null)
+      .order("renewal_due_at", { ascending: true })
+      .limit(6),
   ]);
 
-  const recentListings = recentListingsResult.data?.length
-    ? await hydrateListings(recentListingsResult.data as Listing[])
-    : mockListings.slice(0, 4);
-
-  const matchedRequirements = requirementsResult.data?.length
-    ? await fetchRequirements({})
-    : mockRequirements.slice(0, 3);
+  const recentListings = recentListingsResult.data?.length ? await hydrateListings(recentListingsResult.data as Listing[]) : [];
+  const matchedRequirements = requirementsResult.data?.length ? await hydrateRequirements(requirementsResult.data as Requirement[]) : [];
+  const renewalListings = renewalListingsResult.data?.length
+    ? (await hydrateListings(renewalListingsResult.data as Listing[])).filter((listing) => {
+        const daysUntilDue = getRenewalMeta(listing.renewal_due_at).daysUntilDue;
+        return daysUntilDue !== null && daysUntilDue <= 7;
+      })
+    : [];
 
   return {
     metrics: {
       myListings: myListingsResult.count || 0,
       myEnquiries: enquiriesResult.count || 0,
-      matchedRequirements: requirementsResult.data?.length || matchedRequirements.length,
+      matchedRequirements: matchedRequirements.length,
       pendingListings: pendingResult.count || 0,
     },
     recentListings,
-    matchedRequirements: matchedRequirements.slice(0, 4),
+    matchedRequirements,
+    renewalListings,
   };
 }
 
@@ -264,7 +312,7 @@ export async function createListing(args: {
     status: "pending",
     created_by: userId,
     agency_id: agencyId,
-    renewal_due_at: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
+    renewal_due_at: new Date(Date.now() + 14 * DAY_IN_MS).toISOString(),
   };
 
   const { data: listing, error } = await supabase.from("listings").insert(payload).select("id").single();
@@ -312,4 +360,30 @@ export async function createListing(args: {
   return listingId;
 }
 
+export async function createRequirement(args: { values: RequirementFormValues; userId: string }) {
+  const { values, userId } = args;
 
+  const payload = {
+    title: values.title,
+    deal_type: values.dealType,
+    property_type: values.propertyType,
+    bedrooms: parseNumber(values.bedrooms),
+    area_id: values.areaId,
+    budget_min: parseNumber(values.budgetMin),
+    budget_max: parseNumber(values.budgetMax),
+    urgency: values.urgency,
+    notes: values.notes || null,
+    posted_by: userId,
+  };
+
+  const { data, error } = await supabase.from("requirements").insert(payload).select("id").single();
+  if (error || !data) throw error || new Error("Failed to post buyer requirement.");
+  return data.id as string;
+}
+
+export async function reconfirmListing(listingId: string) {
+  const renewalDueAt = new Date(Date.now() + 14 * DAY_IN_MS).toISOString();
+  const { error } = await supabase.from("listings").update({ renewal_due_at: renewalDueAt }).eq("id", listingId);
+  if (error) throw error;
+  return renewalDueAt;
+}

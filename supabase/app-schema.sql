@@ -13,7 +13,7 @@ DO $$ BEGIN
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 DO $$ BEGIN
-  CREATE TYPE public.deal_type AS ENUM ('sale', 'rent');
+  CREATE TYPE public.deal_type AS ENUM ('off_plan', 'secondary', 'distressed', 'urgent_sale');
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 DO $$ BEGIN

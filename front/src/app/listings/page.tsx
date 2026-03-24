@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -10,6 +10,7 @@ import { useAuth } from "@/auth/useAuth";
 import { dealTypeOptions, propertyTypeOptions } from "@/lib/deal-constants";
 import { fetchAreas, fetchListings, ListingFilters } from "@/lib/deal-data";
 import { Area, Listing } from "@/lib/deal-types";
+import { formatDealType } from "@/lib/deal-utils";
 import { canAccessBrokerWorkspace, getDefaultRouteForUser } from "@/lib/route-access";
 
 const initialFilters: ListingFilters = {
@@ -42,14 +43,18 @@ export default function ListingsPage() {
   if (loading || pageLoading || !user) return <LoadingScreen label="Loading listing feed..." />;
 
   return (
-    <AppShell title="Browse Listings" subtitle="Filter approved off-market inventory by deal type, area, bedrooms, price, and co-broke terms.">
+    <AppShell title="Browse Listings" subtitle="Filter approved off-market inventory by area, property type, price, co-broke terms, and keyword search.">
       <section className="panel p-6">
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-6">
+          <div className="xl:col-span-2">
+            <label className="label">Search</label>
+            <input className="input" value={filters.search || ""} onChange={(event) => setFilters({ ...filters, search: event.target.value || undefined })} placeholder="Area, title, developer, keyword" />
+          </div>
           <div>
             <label className="label">Deal type</label>
             <select className="input" value={filters.dealType || ""} onChange={(event) => setFilters({ ...filters, dealType: event.target.value || undefined })}>
               <option value="">All</option>
-              {dealTypeOptions.map((option) => <option key={option} value={option}>{option}</option>)}
+              {dealTypeOptions.map((option) => <option key={option} value={option}>{formatDealType(option)}</option>)}
             </select>
           </div>
           <div>
@@ -67,6 +72,15 @@ export default function ListingsPage() {
             </select>
           </div>
           <div>
+            <label className="label">Property type</label>
+            <select className="input" value={filters.propertyType || ""} onChange={(event) => setFilters({ ...filters, propertyType: event.target.value || undefined })}>
+              <option value="">All types</option>
+              {propertyTypeOptions.map((option) => <option key={option} value={option}>{option}</option>)}
+            </select>
+          </div>
+        </div>
+        <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-[1fr_1fr_1fr_auto] xl:items-end">
+          <div>
             <label className="label">Min price</label>
             <input className="input" value={filters.minPrice || ""} onChange={(event) => setFilters({ ...filters, minPrice: event.target.value || undefined })} placeholder="500000" />
           </div>
@@ -75,17 +89,8 @@ export default function ListingsPage() {
             <input className="input" value={filters.maxPrice || ""} onChange={(event) => setFilters({ ...filters, maxPrice: event.target.value || undefined })} placeholder="5000000" />
           </div>
           <div>
-            <label className="label">Property type</label>
-            <select className="input" value={filters.propertyType || ""} onChange={(event) => setFilters({ ...filters, propertyType: event.target.value || undefined })}>
-              <option value="">All types</option>
-              {propertyTypeOptions.map((option) => <option key={option} value={option}>{option}</option>)}
-            </select>
-          </div>
-        </div>
-        <div className="mt-4 flex flex-wrap items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <label className="text-sm font-semibold text-brand-ink">Sort by</label>
-            <select className="input w-[220px]" value={filters.sort || "newest"} onChange={(event) => setFilters({ ...filters, sort: event.target.value as ListingFilters["sort"] })}>
+            <label className="label">Sort by</label>
+            <select className="input" value={filters.sort || "newest"} onChange={(event) => setFilters({ ...filters, sort: event.target.value as ListingFilters["sort"] })}>
               <option value="newest">Newest</option>
               <option value="price_asc">Price: Low to high</option>
               <option value="price_desc">Price: High to low</option>
@@ -104,10 +109,9 @@ export default function ListingsPage() {
             ))}
           </div>
         ) : (
-          <EmptyState title="No listings match these filters" description="Try widening price, area, or property type to pull more approved inventory into the feed." />
+          <EmptyState title="No listings match these filters" description="Try widening the search or price range to pull more approved inventory into the feed." />
         )}
       </section>
     </AppShell>
   );
 }
-

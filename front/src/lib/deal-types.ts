@@ -1,7 +1,7 @@
 ﻿export type UserRole = "broker" | "admin";
 export type UserStatus = "pending" | "approved" | "suspended" | "deactivated";
 export type ListingStatus = "pending" | "approved" | "rejected" | "expired";
-export type DealType = "sale" | "rent";
+export type DealType = "off_plan" | "secondary" | "distressed" | "urgent_sale";
 export type PropertyType =
   | "apartment"
   | "villa"
@@ -109,6 +109,7 @@ export interface Listing {
   listing_documents?: ListingDocument[];
   owner?: PlatformUser | null;
   agency?: Agency | null;
+  owner_active_listings_count?: number | null;
 }
 
 export interface Requirement {
@@ -161,6 +162,18 @@ export interface DashboardMetrics {
   myEnquiries: number;
   matchedRequirements: number;
   pendingListings: number;
+}
+
+export interface RequirementFormValues {
+  title: string;
+  dealType: DealType;
+  propertyType: PropertyType;
+  bedrooms: string;
+  areaId: string;
+  budgetMin: string;
+  budgetMax: string;
+  urgency: RequirementUrgency;
+  notes: string;
 }
 
 export interface PublicOverview {

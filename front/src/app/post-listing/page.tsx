@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -9,6 +9,7 @@ import { useAuth } from "@/auth/useAuth";
 import { createListing, fetchAreas } from "@/lib/deal-data";
 import { dealTypeOptions, propertyTypeOptions } from "@/lib/deal-constants";
 import { Area, ListingFormValues } from "@/lib/deal-types";
+import { formatDealType } from "@/lib/deal-utils";
 import { canAccessBrokerWorkspace, getDefaultRouteForUser } from "@/lib/route-access";
 
 const steps = ["Property details", "Deal details", "Co-broke terms", "Media upload"];
@@ -16,7 +17,7 @@ const steps = ["Property details", "Deal details", "Co-broke terms", "Media uplo
 const initialValues: ListingFormValues = {
   title: "",
   propertyType: "apartment",
-  dealType: "sale",
+  dealType: "secondary",
   bedrooms: "",
   sizeSqft: "",
   areaId: "",
@@ -120,7 +121,7 @@ export default function PostListingPage() {
           {currentStep === 1 ? (
             <>
               <div className="grid gap-5 md:grid-cols-2">
-                <div><label className="label">Deal type</label><select className="input" value={values.dealType} onChange={(event) => setValues({ ...values, dealType: event.target.value as ListingFormValues["dealType"] })}>{dealTypeOptions.map((option) => <option key={option} value={option}>{option}</option>)}</select></div>
+                <div><label className="label">Deal type</label><select className="input" value={values.dealType} onChange={(event) => setValues({ ...values, dealType: event.target.value as ListingFormValues["dealType"] })}>{dealTypeOptions.map((option) => <option key={option} value={option}>{formatDealType(option)}</option>)}</select></div>
                 <div><label className="label">Price</label><input className="input" value={values.price} onChange={(event) => setValues({ ...values, price: event.target.value })} required /></div>
               </div>
               <div className="grid gap-5 md:grid-cols-2">

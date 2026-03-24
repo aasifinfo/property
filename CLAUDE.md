@@ -28,8 +28,9 @@ install.bat         # Windows (PowerShell integration)
 
 ### Full-Stack Development
 ```bash
-# Smart development startup (uses detected ports)
-npm run dev         # Start everything with auto-detected ports
+# Frontend startup without Docker
+npm run dev         # Start Next.js from the repository root
+npm run dev:docker  # Start Docker services, then Next.js
 npm run setup       # Re-run smart installer
 npm run status      # Check service status
 npm run logs        # View service logs

@@ -103,7 +103,7 @@ Start with **[QUICK-START.md](./QUICK-START.md)** - we'll guide you through ever
 
 ### **⚡ Want to Code Immediately?**  
 ```bash
-npm run setup && cd front && npm run dev
+npm run setup && npm run dev
 ```
 Then read **[FRAMEWORK-GUIDE.md](./FRAMEWORK-GUIDE.md)** to master the 3-tier system.
 
@@ -148,7 +148,8 @@ nextjs-supabase-template/
 
 ```bash
 # Development
-npm run dev        # Start everything
+npm run dev        # Start the Next.js frontend without Docker
+npm run dev:docker # Start Docker services, then the frontend
 npm run setup      # Re-run smart installer
 
 # Service Management  

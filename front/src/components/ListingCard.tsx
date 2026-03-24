@@ -1,8 +1,14 @@
-﻿import Link from "next/link";
+import Link from "next/link";
 import { Listing } from "@/lib/deal-types";
-import { formatCurrency, formatDate, formatNumber, statusClasses } from "@/lib/deal-utils";
+import { formatCurrency, formatDate, formatDealType, formatNumber, statusClasses } from "@/lib/deal-utils";
 
-export function ListingCard({ listing }: { listing: Listing }) {
+export function ListingCard({
+  listing,
+  interactive = true,
+}: {
+  listing: Listing;
+  interactive?: boolean;
+}) {
   const coverImage = listing.listing_images?.find((image) => image.is_cover)?.public_url || listing.listing_images?.[0]?.public_url;
 
   return (
@@ -22,7 +28,7 @@ export function ListingCard({ listing }: { listing: Listing }) {
       <div className="p-6">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-brand-orange">{listing.deal_type}</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-brand-orange">{formatDealType(listing.deal_type)}</p>
             <h3 className="mt-2 text-xl font-semibold text-brand-navy">{listing.title}</h3>
           </div>
           <p className="text-xl font-bold text-brand-navy">{formatCurrency(listing.price)}</p>
@@ -51,12 +57,17 @@ export function ListingCard({ listing }: { listing: Listing }) {
 
         <div className="mt-5 flex items-center justify-between gap-3">
           <p className="text-xs uppercase tracking-[0.2em] text-brand-slate">{listing.property_type}</p>
-          <Link href={`/listings/${listing.id}`} className="btn-primary">
-            View Listing
-          </Link>
+          {interactive ? (
+            <Link href={`/listings/${listing.id}`} className="btn-primary">
+              View Listing
+            </Link>
+          ) : (
+            <span className="rounded-full border border-brand-line px-4 py-2 text-sm font-semibold text-brand-slate">
+              Illustrative Preview
+            </span>
+          )}
         </div>
       </div>
     </article>
   );
 }
-

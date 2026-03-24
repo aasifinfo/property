@@ -1,0 +1,361 @@
+V&S DEAL EXCHANGE                                   Build Specification & Tender Brief
+
+       VEER & SANT REAL ESTATE
+
+  V&S Deal Exchange
+
+    Build Specification & Tender Brief
+
+      Budget: AED 20,000 � 30,000
+      Project Type: Web Application (MVP)
+      Issued: March 2026
+
+       Tender responses to: james@veersant.com
+
+Project in one sentence
+Build a private, invite-only web portal for verified Dubai real estate brokers to share off-market
+listings, post buyer requirements, and connect directly for co-broke deals -- replacing the current
+WhatsApp-based deal flow with a structured, moderated platform.
+
+This document contains full technical specifications, screen-by-screen requirements, user roles,
+database schema, and acceptance criteria. A working interactive prototype is available on
+request to accompany this brief.
+
+Confidential -- Veer & Sant Real Estate LLC, Dubai  Page 1 of 13
+V&S DEAL EXCHANGE                                   Build Specification & Tender Brief
+
+1. Background & Business Context
+
+Veer & Sant Real Estate LLC is a licensed Dubai real estate brokerage. We are building the
+V&S Deal Exchange -- a private, broker-to-broker deal flow platform for the Dubai market.
+
+The problem we are solving: Dubai's off-market property deal flow currently happens via
+WhatsApp groups and informal broker networks. This is unstructured, unverified, and chaotic.
+Serious deals get lost. Stale listings circulate. There is no quality control.
+
+Our solution: A gated, verified broker network where only DLD-licensed brokers can access and
+post. Listings are moderated. Buyer requirements are live. Co-broke terms are explicit. The
+platform is premium, selective, and deal-focused -- not a mass-market consumer portal.
+
+Competitor context
+
+The closest comparable in the market is offmarketdxb.com -- a simple custom web app that
+functions essentially as a WhatsApp lead generator with listings. It has almost no moat. Our
+platform is positioned as a step above: verified network, structured deal flow, admin-controlled
+quality.
+
+What we are NOT building
+
+    � A consumer-facing property search site (not Property Finder, not Bayut)
+    � A CRM or full agency management system
+    � A mobile app (web only for this stage)
+    � Automated DLD verification (manual admin verification in this MVP)
+
+Confidential -- Veer & Sant Real Estate LLC, Dubai                             Page 2 of 13
+V&S DEAL EXCHANGE                                   Build Specification & Tender Brief
+
+2. Project Scope -- MVP (Stage 1)
+
+The MVP must deliver a fully functional web application with the following eight core screens
+and their associated logic. A Figma-equivalent interactive HTML prototype is available to
+accompany this brief.
+
+2.1 Public screens (unauthenticated)
+
+Screen 1: Homepage / Hero
+    � Navigation bar with V&S branding and logo
+    � Hero section with headline, value proposition, key platform stats (listings, brokers, deal
+        flow)
+    � Preview cards: sample listings and buyer requirements (non-interactive, illustrative)
+    � "How It Works" section -- 4-step explainer
+    � Primary CTA: "Request Broker Access"  leads to Apply screen
+    � "Broker Login" link for approved brokers
+
+Screen 2: Apply to Join
+    � Left panel: value proposition, platform perks, "Already approved? Login" link
+    � Right panel: broker application form (see Section 4 for full field list)
+    � On submit: confirmation message displayed, application sent to admin queue
+    � No automated email needed in MVP -- admin reviews manually
+
+2.2 Authenticated broker screens (post-login)
+
+All authenticated screens share a persistent sidebar navigation and top navbar. The sidebar
+collapses the public nav and shows broker-specific links.
+
+Screen 3: Broker Dashboard
+    � Summary metrics: my active listings, new enquiries, buyer requirements matching my
+        areas
+    � My listings preview (last 3, with status badges: Live / Pending / Expiring)
+    � Matched buyer requirements feed (filtered to broker's speciality areas)
+    � Recent enquiry activity
+
+Screen 4: Browse Listings
+    � Left sidebar: filters (deal type, area, bedrooms, price range, property type)
+    � Listings feed: each card shows deal type badge, title, price, co-broke %, broker tag, status
+    � Sort by: newest, price (high/low), co-broke %
+    � Each listing links to Listing Detail screen
+    � Enquire / WhatsApp CTA on each card
+
+Confidential -- Veer & Sant Real Estate LLC, Dubai  Page 3 of 13
+V&S DEAL EXCHANGE                                   Build Specification & Tender Brief
+
+Screen 5: Listing Detail
+
+    � Full listing: images placeholder, all specs (beds, size, area, price, handover, yield,
+        payment plan)
+
+    � Deal type, commission split, co-broke notes prominently displayed
+    � Posting broker profile card (name, agency, member since, active listings count)
+    � Enquiry modal: sends enquiry with broker's details, triggers WhatsApp or email contact
+    � Last reconfirmed date visible
+
+Screen 6: Buyer Requirements Board
+    � Grid of anonymised buyer requirement cards
+    � Each card: urgency pill, buyer brief text, specs (budget, bedrooms, area, type, timeline)
+    � "I have a match" CTA opens contact modal
+    � Filter by urgency, area, budget range
+
+Screen 7: Post a Listing
+    � Multi-section form: Property Details, Deal Details, Co-Broke Terms, Media Upload
+    � Deal type selector: Off-Plan / Secondary / Distressed / Urgent Sale
+    � Co-broke percentage input with notes field
+    � Listing confirmation prompt every 7�14 days (auto-flag for admin if not renewed)
+    � On submit: listing enters Pending state awaiting admin approval
+
+Screen 8: Admin Panel
+    � Listings pending approval: approve / reject / request changes per listing
+    � Broker applications queue: approve / reject per applicant
+    � Active broker management: suspend, deactivate
+    � Platform activity log
+    � Basic metrics: total listings, active brokers, pending items, expiring listings
+    � Export leads (CSV)
+
+Confidential -- Veer & Sant Real Estate LLC, Dubai                                     Page 4 of 13
+V&S DEAL EXCHANGE                                      Build Specification & Tender Brief
+
+3. User Roles & Permissions
+
+Role             Capabilities                          Access method
+Public visitor
+Pending broker   View homepage and apply screen only.  No login required
+Approved broker  Cannot see listings or requirements.
+Admin
+                 Application submitted but not yet approved. Account created, not
+
+                 Cannot access portal.                 active
+
+                 Full access to all broker screens. Can post Login required
+                 listings, view requirements, send enquiries.
+
+                 Full platform access including admin panel. Separate admin login
+                 Can approve/reject brokers and listings.
+
+Confidential -- Veer & Sant Real Estate LLC, Dubai                           Page 5 of 13
+V&S DEAL EXCHANGE                                   Build Specification & Tender Brief
+
+4. Data Model & Form Fields
+
+4.1 Broker application form fields
+
+Field                    Type & Validation
+
+First Name               Text -- required
+
+Last Name                Text -- required
+
+Email Address            Email -- required, unique
+
+Mobile / WhatsApp        Phone number -- required
+
+Agency Name              Text -- required
+
+RERA / BRN Number        Text -- required (manually verified by admin against DLD)
+
+Areas You Cover          Free text -- required
+
+Speciality               Dropdown: Secondary Market / Off-Plan / Luxury /
+                         Investment / Mixed
+
+Years of Experience      Number -- optional
+
+4.2 Listing form fields  Type & Validation
+                         Text -- required
+  Field                  Dropdown: Villa / Apartment / Townhouse / Penthouse /
+  Title                  Land / Commercial
+  Property Type          Dropdown: Secondary / Off-Plan / Distressed / Urgent Sale
+                         Dropdown: Studio / 1BR / 2BR / 3BR / 4BR / 5BR+
+  Deal Type              Number -- optional
+  Bedrooms               Text -- required
+  Size (sqft)            Text -- optional (for off-plan)
+  Area / Community       Number -- required
+  Developer              Text -- optional (e.g. "60/40", "Post-handover")
+  Price (AED)            Date -- optional (for off-plan)
+  Payment Plan           Number -- optional
+  Handover Date          Number -- required
+  Estimated Yield %
+  Co-Broke %
+
+Confidential -- Veer & Sant Real Estate LLC, Dubai                         Page 6 of 13
+V&S DEAL EXCHANGE                                                            Build Specification & Tender Brief
+
+  Field                   Type & Validation
+  Co-Broke Notes          Text -- optional
+  Description             Long text -- optional
+  Broker Notes (private)  Long text -- not shown to other brokers
+  Images                  File upload -- up to 10 images, JPEG/PNG
+  Documents               File upload -- optional (floor plans, NOC, etc.)
+  Last Reconfirmed        Auto-set on post. Broker prompted to renew every 7�14
+                          days.
+
+4.3 Database tables required
+
+The following tables are the minimum required for the MVP. The developer may propose
+additional tables as needed.
+
+Table                     Purpose
+users
+broker_profiles           Authentication -- email, password hash, role, created_at
+
+agencies                  Broker details -- linked to users, agency, BRN, areas,
+listings                  speciality, status
+
+listing_images            Agency name, optional logo, linked brokers
+listing_documents
+requirements              Full listing data -- linked to broker_profile, status,
+                          last_reconfirmed_at
+leads
+                          Image file paths / storage URLs -- linked to listing
+areas
+commission_terms          Document file paths -- linked to listing
+activity_log
+                          Buyer requirement cards -- linked to broker_profile,
+listing_status_history    budget, area, urgency
+
+                          Enquiries -- linked to listing and sending broker, message,
+                          timestamp
+
+                          Dubai area/community reference list
+
+                          Co-broke percentage and notes -- linked to listing
+
+                          Platform events -- broker approved, listing posted, listing
+                          expired, etc.
+
+                          Status changes per listing with timestamps
+
+Confidential -- Veer & Sant Real Estate LLC, Dubai  Page 7 of 13
+V&S DEAL EXCHANGE                                   Build Specification & Tender Brief
+
+5. Recommended Technology Stack
+
+We are not prescriptive about tech stack -- developers may propose alternatives. However, the
+following stack is our preferred recommendation based on project requirements, budget, and
+long-term scalability. Proposals that deviate should include clear justification.
+
+Layer                  Recommended tool & rationale
+Frontend framework
+Hosting                Next.js (React) -- handles marketing site and app portal in
+Database               one codebase, clean SEO, mature deployment
+
+Authentication         Vercel -- simplest deployment path for Next.js, good
+File storage           preview environments, free tier covers MVP traffic
+Edge / CDN
+Email (notifications)  Supabase (Postgres) -- real relational database, built-in
+Styling                auth, row-level security for broker roles, real-time capability
+Language               for future features
+
+                       Supabase Auth -- email/password login, role-based
+                       access control (broker / admin)
+
+                       Supabase Storage -- for listing images and documents
+
+                       Cloudflare -- DNS, caching, bot protection, DDoS
+                       mitigation
+
+                       Resend or SendGrid -- transactional email for application
+                       status, enquiry notifications (basic)
+
+                       Tailwind CSS -- utility-first, rapid development, consistent
+                       design system
+
+                       TypeScript -- type safety reduces bugs, better long-term
+                       maintainability
+
+Design handoff
+
+A fully interactive HTML prototype of the entire platform is available and will be provided to the
+selected developer. All screens, states, modals, navigation flows, brand colours (#003A5D navy,
+#F88D2A orange), and typography (DM Sans) are defined in the prototype. This eliminates
+design ambiguity and should reduce build time significantly.
+
+Confidential -- Veer & Sant Real Estate LLC, Dubai  Page 8 of 13
+V&S DEAL EXCHANGE                                   Build Specification & Tender Brief
+
+6. Acceptance Criteria
+
+The following must be met for the project to be considered complete and payment released in
+full.
+
+6.1 Functional requirements
+
+    1. All 8 screens specified in Section 2 are built and functional
+    2. All 3 user roles (public, broker, admin) work correctly with proper access control
+    3. Broker application form submits and appears in admin queue
+    4. Admin can approve / reject broker applications
+    5. Approved broker can log in and access all broker screens
+    6. Broker can post a listing -- it enters pending state
+    7. Admin can approve / reject listings
+    8. Approved listing appears in Browse Listings feed with correct filters working
+    9. Broker can post a buyer requirement
+    10. Enquiry modal sends enquiry and notifies listing broker via email
+    11. Listing renewal prompt triggers after 7 days of no reconfirmation
+    12. Admin can suspend a broker account
+    13. Admin can export leads as CSV
+
+6.2 Non-functional requirements
+
+    � Responsive design -- must work cleanly on desktop (1280px+) and mobile (375px+)
+    � Page load time under 3 seconds on standard broadband
+    � Secure authentication -- passwords hashed, sessions managed correctly
+    � Row-level security: brokers cannot access other brokers' private notes or unapproved
+
+        data
+    � All form inputs validated client-side and server-side
+    � Images optimised on upload (max 2MB per image stored)
+    � SSL / HTTPS enforced on all pages
+    � No broken links or console errors in production build
+
+6.3 Deliverables
+
+    � Fully deployed live URL (production environment)
+    � Source code in a private GitHub repository -- ownership transferred to Veer & Sant
+    � Admin login credentials
+    � Environment variables documented in a README
+    � 2 weeks of bug-fix support post-launch (response within 48 hours)
+
+Confidential -- Veer & Sant Real Estate LLC, Dubai                                         Page 9 of 13
+V&S DEAL EXCHANGE                                           Build Specification & Tender Brief
+
+9. Appendix -- Screen Summary Reference
+
+Quick reference for all screens. Full detail in Section 2.
+
+Screen             Access                           Key content
+Homepage           Public                           Hero, stats, listing previews, how it works, CTA
+Apply to Join      Public                           Broker registration form, value proposition
+                                                    panel
+Broker Dashboard   Authenticated broker             Metrics, my listings, matched requirements,
+                                                    enquiries
+Browse Listings    Authenticated broker             Filterable listings feed with sort and search
+Listing Detail     Authenticated broker             Full listing, specs, broker card, enquiry modal
+Buyer              Authenticated broker             Anonymised buyer briefs grid, match CTA
+Requirements
+Post a Listing     Authenticated broker             Multi-section listing form, media upload
+Admin Panel        Admin only                       Approvals queue, broker management, activity
+                                                    log, export
+
+                                  -- End of Document --
+                   V&S Deal Exchange Build Spec v1.0 -- March 2026
+
+Confidential -- Veer & Sant Real Estate LLC, Dubai                  Page 13 of 13
+

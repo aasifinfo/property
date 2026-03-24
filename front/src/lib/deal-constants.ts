@@ -11,16 +11,15 @@ export const propertyTypeOptions: PropertyType[] = [
   "land",
 ];
 
-export const dealTypeOptions: DealType[] = ["sale", "rent"];
+export const dealTypeOptions: DealType[] = ["off_plan", "secondary", "distressed", "urgent_sale"];
 export const urgencyOptions: RequirementUrgency[] = ["hot", "active", "planning"];
 
 export const specialityOptions = [
   "Secondary Market",
   "Off-Plan",
-  "Luxury Homes",
-  "Commercial",
-  "Land Deals",
-  "Investment Advisory",
+  "Luxury",
+  "Investment",
+  "Mixed",
 ];
 
 export const mockListings: Listing[] = [
@@ -28,7 +27,7 @@ export const mockListings: Listing[] = [
     id: "mock-listing-1",
     title: "Palm Jumeirah 4BR Signature Villa",
     property_type: "villa",
-    deal_type: "sale",
+    deal_type: "secondary",
     bedrooms: 4,
     size_sqft: 5200,
     area_id: "mock-area-1",
@@ -64,7 +63,7 @@ export const mockListings: Listing[] = [
     id: "mock-listing-2",
     title: "Business Bay 2BR Investor Unit",
     property_type: "apartment",
-    deal_type: "sale",
+    deal_type: "off_plan",
     bedrooms: 2,
     size_sqft: 1350,
     area_id: "mock-area-2",
@@ -100,7 +99,7 @@ export const mockListings: Listing[] = [
     id: "mock-listing-3",
     title: "JVC Premium Townhouse Block Deal",
     property_type: "townhouse",
-    deal_type: "sale",
+    deal_type: "distressed",
     bedrooms: 3,
     size_sqft: 2800,
     area_id: "mock-area-3",
@@ -138,7 +137,7 @@ export const mockRequirements: Requirement[] = [
   {
     id: "mock-req-1",
     title: "Family ready villa under AED 13M",
-    deal_type: "sale",
+    deal_type: "secondary",
     property_type: "villa",
     bedrooms: 4,
     area_id: "mock-area-4",
@@ -153,7 +152,7 @@ export const mockRequirements: Requirement[] = [
   {
     id: "mock-req-2",
     title: "Yield-led office search in DIFC",
-    deal_type: "sale",
+    deal_type: "distressed",
     property_type: "office",
     bedrooms: null,
     area_id: "mock-area-5",
@@ -167,8 +166,8 @@ export const mockRequirements: Requirement[] = [
   },
   {
     id: "mock-req-3",
-    title: "2BR rent requirement for relocation client",
-    deal_type: "rent",
+    title: "Urgent 2BR buyer brief for relocation client",
+    deal_type: "urgent_sale",
     property_type: "apartment",
     bedrooms: 2,
     area_id: "mock-area-2",

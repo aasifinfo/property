@@ -1,6 +1,6 @@
-﻿import type { ReactNode } from "react";
+import type { ReactNode } from "react";
 import { Requirement } from "@/lib/deal-types";
-import { formatCurrency, statusClasses } from "@/lib/deal-utils";
+import { formatCurrency, formatDealType, statusClasses } from "@/lib/deal-utils";
 
 export function RequirementCard({
   requirement,
@@ -16,7 +16,7 @@ export function RequirementCard({
           <span className={statusClasses(requirement.urgency)}>{requirement.urgency}</span>
           <h3 className="mt-3 text-xl font-semibold text-brand-navy">{requirement.title}</h3>
         </div>
-        <p className="text-sm font-semibold uppercase tracking-[0.2em] text-brand-slate">{requirement.deal_type}</p>
+        <p className="text-sm font-semibold uppercase tracking-[0.2em] text-brand-slate">{formatDealType(requirement.deal_type)}</p>
       </div>
 
       <div className="mt-5 grid gap-3 sm:grid-cols-3">
@@ -36,18 +36,15 @@ export function RequirementCard({
         </div>
       </div>
 
-      <p className="mt-4 text-sm leading-6 text-brand-slate">{requirement.notes || "Broker hasn't added extra notes yet."}</p>
+      <p className="mt-4 text-sm leading-6 text-brand-slate">{requirement.notes || "No extra requirement notes shared yet."}</p>
 
       <div className="mt-5 flex items-center justify-between gap-4">
         <div>
-          <p className="text-sm font-semibold text-brand-ink">
-            {(requirement.owner?.first_name || "Broker") + " " + (requirement.owner?.last_name || "")}
-          </p>
-          <p className="text-sm text-brand-slate">{requirement.owner?.email || "Private broker network"}</p>
+          <p className="text-sm font-semibold text-brand-ink">Verified broker brief</p>
+          <p className="text-sm text-brand-slate">Broker identity is revealed only after you contact them.</p>
         </div>
         {action}
       </div>
     </article>
   );
 }
-

@@ -1,4 +1,4 @@
-﻿import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getServiceSupabase, requireAdmin } from "@/lib/deal-server";
 
 export async function GET(request: NextRequest) {
@@ -6,12 +6,14 @@ export async function GET(request: NextRequest) {
   if ("error" in auth) return auth.error;
 
   const supabase = getServiceSupabase();
+  const expiryThreshold = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
 
   const [
     applicationsResult,
     profilesResult,
     agenciesResult,
     pendingListingsResult,
+    expiringListingsResult,
     brokersResult,
     logsResult,
     listingsCount,
@@ -30,9 +32,16 @@ export async function GET(request: NextRequest) {
     supabase.from("agencies").select("id, name, rera_brn, status"),
     supabase
       .from("listings")
-      .select("id, title, price, status, created_at, created_by, agency_id")
+      .select("id, title, price, status, created_at, created_by, agency_id, renewal_due_at")
       .eq("status", "pending")
       .order("created_at", { ascending: false }),
+    supabase
+      .from("listings")
+      .select("id, title, price, status, created_at, created_by, agency_id, renewal_due_at")
+      .eq("status", "approved")
+      .not("renewal_due_at", "is", null)
+      .lte("renewal_due_at", expiryThreshold)
+      .order("renewal_due_at", { ascending: true }),
     supabase
       .from("users")
       .select("id, email, first_name, last_name, phone, role, status, agency_id, created_at, updated_at")
@@ -43,7 +52,7 @@ export async function GET(request: NextRequest) {
       .from("activity_log")
       .select("id, action, target_table, target_id, created_at, metadata, actor_user_id")
       .order("created_at", { ascending: false })
-      .limit(15),
+      .limit(20),
     supabase.from("listings").select("id", { count: "exact", head: true }),
     supabase.from("users").select("id", { count: "exact", head: true }).eq("role", "broker").eq("status", "approved"),
     supabase.from("leads").select("id", { count: "exact", head: true }),
@@ -53,13 +62,22 @@ export async function GET(request: NextRequest) {
   const agencyMap = new Map((agenciesResult.data || []).map((agency) => [agency.id, agency]));
 
   const actorIds = Array.from(new Set((logsResult.data || []).map((log) => log.actor_user_id).filter(Boolean)));
+  const listingOwnerIds = Array.from(
+    new Set([
+      ...(pendingListingsResult.data || []).map((listing) => listing.created_by),
+      ...(expiringListingsResult.data || []).map((listing) => listing.created_by),
+    ].filter(Boolean))
+  );
+
   const { data: actors } = actorIds.length
-    ? await supabase
-        .from("users")
-        .select("id, email, first_name, last_name")
-        .in("id", actorIds)
+    ? await supabase.from("users").select("id, email, first_name, last_name").in("id", actorIds)
     : { data: [] as any[] };
+  const { data: listingOwners } = listingOwnerIds.length
+    ? await supabase.from("users").select("id, email, first_name, last_name").in("id", listingOwnerIds)
+    : { data: [] as any[] };
+
   const actorMap = new Map((actors || []).map((actor) => [actor.id, actor]));
+  const ownerMap = new Map((listingOwners || []).map((owner) => [owner.id, owner]));
 
   return NextResponse.json({
     metrics: {
@@ -68,13 +86,23 @@ export async function GET(request: NextRequest) {
       totalLeads: leadsCount.count || 0,
       pendingApplications: applicationsResult.data?.length || 0,
       pendingListings: pendingListingsResult.data?.length || 0,
+      expiringListings: expiringListingsResult.data?.length || 0,
     },
     applications: (applicationsResult.data || []).map((user) => ({
       ...user,
       brokerProfile: profileMap.get(user.id) || null,
       agency: user.agency_id ? agencyMap.get(user.agency_id) || null : null,
     })),
-    pendingListings: pendingListingsResult.data || [],
+    pendingListings: (pendingListingsResult.data || []).map((listing) => ({
+      ...listing,
+      owner: ownerMap.get(listing.created_by) || null,
+      agency: listing.agency_id ? agencyMap.get(listing.agency_id) || null : null,
+    })),
+    expiringListings: (expiringListingsResult.data || []).map((listing) => ({
+      ...listing,
+      owner: ownerMap.get(listing.created_by) || null,
+      agency: listing.agency_id ? agencyMap.get(listing.agency_id) || null : null,
+    })),
     brokers: (brokersResult.data || []).map((broker) => ({
       ...broker,
       brokerProfile: profileMap.get(broker.id) || null,
@@ -86,4 +114,3 @@ export async function GET(request: NextRequest) {
     })),
   });
 }
-

@@ -68,11 +68,11 @@ Next steps:
 After setup, start your development environment:
 
 ```bash
-# Start everything
+# Start frontend without Docker
 npm run dev
 
-# OR manually
-docker-compose up -d && cd front && npm run dev
+# OR if you want the full Docker stack
+npm run dev:docker
 ```
 
 ## 🤖 Using the 3-Tier Claude Code Framework

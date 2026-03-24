@@ -1,4 +1,4 @@
-﻿import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getServiceSupabase, jsonError, requireAdmin } from "@/lib/deal-server";
 
 async function logActivity(actorUserId: string, action: string, targetTable: string, targetId: string, metadata: Record<string, unknown> = {}) {
@@ -45,6 +45,10 @@ export async function POST(request: NextRequest) {
         await logActivity(auth.user.id, "listing_rejected", "listings", targetId, { notes: notes || null });
         break;
       }
+      case "request_listing_changes": {
+        await logActivity(auth.user.id, "listing_changes_requested", "listings", targetId, { notes: notes || null });
+        break;
+      }
       case "suspend_broker": {
         await supabase.from("users").update({ status: "suspended" }).eq("id", targetId);
         await logActivity(auth.user.id, "broker_suspended", "users", targetId, { notes: notes || null });
@@ -64,4 +68,3 @@ export async function POST(request: NextRequest) {
     return jsonError(error instanceof Error ? error.message : "Admin action failed.", 500);
   }
 }
-
