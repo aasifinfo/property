@@ -33,8 +33,13 @@ export default function SignInPage() {
     event.preventDefault();
     setLoading(true);
     try {
-      await authOperations.signIn(email, password);
+      const signInResult = await authOperations.signIn(email, password);
+      const destination = await authOperations.resolvePostSignInRoute(
+        signInResult.session.access_token,
+        signInResult.user.id
+      );
       enqueueSnackbar("Signed in successfully.", { variant: "success" });
+      router.replace(destination);
     } catch (error) {
       enqueueSnackbar(error instanceof Error ? error.message : "Failed to sign in.", { variant: "error" });
       setLoading(false);

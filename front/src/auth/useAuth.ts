@@ -1,18 +1,52 @@
-﻿"use client";
+"use client";
 
-import { useEffect, useContext } from "react";
+import { useContext, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { AuthContext } from "./authContext";
 import { AuthUser } from "./types";
 import { Agency, BrokerProfile, PlatformUser } from "@/lib/deal-types";
 
-async function hydrateUser(user: {
+type SessionUser = {
   id: string;
   email?: string;
   email_confirmed_at?: string | null;
   is_anonymous?: boolean;
   user_metadata?: Record<string, any>;
-}): Promise<AuthUser> {
+};
+
+type HydratedProfilePayload = {
+  platformUser: PlatformUser | null;
+  brokerProfile: BrokerProfile | null;
+  agency: Agency | null;
+};
+
+const sleep = (ms: number) => new Promise((resolve) => window.setTimeout(resolve, ms));
+
+async function fetchHydratedProfile(accessToken: string): Promise<HydratedProfilePayload | null> {
+  for (let attempt = 0; attempt < 4; attempt += 1) {
+    const response = await fetch("/api/public/overview?scope=auth-me", {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+      cache: "no-store",
+    });
+
+    if (response.ok) {
+      return (await response.json()) as HydratedProfilePayload;
+    }
+
+    if ((response.status === 401 || response.status === 403) && attempt < 3) {
+      await sleep(150);
+      continue;
+    }
+
+    return null;
+  }
+
+  return null;
+}
+
+async function hydrateUser(user: SessionUser, accessToken?: string | null): Promise<AuthUser> {
   const metadata = user.user_metadata || {};
 
   const baseUser: AuthUser = {
@@ -31,49 +65,30 @@ async function hydrateUser(user: {
     agency: null,
   };
 
-  const { data: platformUser } = await supabase
-    .from("users")
-    .select("id, email, first_name, last_name, phone, role, status, agency_id, created_at, updated_at")
-    .eq("id", user.id)
-    .maybeSingle();
-
-  if (!platformUser) {
+  if (!accessToken) {
     return baseUser;
   }
 
-  const typedPlatformUser = platformUser as PlatformUser;
+  const payload = await fetchHydratedProfile(accessToken);
+  const platformUser = payload?.platformUser ?? null;
 
-  const { data: brokerProfile } = await supabase
-    .from("broker_profiles")
-    .select(
-      "user_id, agency_id, rera_brn, covered_area_ids, speciality, experience_years, whatsapp_number, bio, application_status, application_submitted_at, approved_at"
-    )
-    .eq("user_id", user.id)
-    .maybeSingle();
-
-  let agency: Agency | null = null;
-  if (typedPlatformUser.agency_id) {
-    const { data } = await supabase
-      .from("agencies")
-      .select("id, name, rera_brn, status")
-      .eq("id", typedPlatformUser.agency_id)
-      .maybeSingle();
-    agency = (data as Agency | null) ?? null;
+  if (!platformUser) {
+    return baseUser;
   }
 
   return {
     ...baseUser,
     displayName:
       baseUser.displayName ||
-      [typedPlatformUser.first_name, typedPlatformUser.last_name].filter(Boolean).join(" ") ||
+      [platformUser.first_name, platformUser.last_name].filter(Boolean).join(" ") ||
       baseUser.email,
-    role: typedPlatformUser.role,
-    status: typedPlatformUser.status,
-    firstName: typedPlatformUser.first_name,
-    lastName: typedPlatformUser.last_name,
-    platformUser: typedPlatformUser,
-    brokerProfile: (brokerProfile as BrokerProfile | null) ?? null,
-    agency,
+    role: platformUser.role,
+    status: platformUser.status,
+    firstName: platformUser.first_name,
+    lastName: platformUser.last_name,
+    platformUser,
+    brokerProfile: payload?.brokerProfile ?? null,
+    agency: payload?.agency ?? null,
   };
 }
 
@@ -83,18 +98,10 @@ export function useAuthInit(
   setError: (error: Error | null) => void
 ) {
   useEffect(() => {
-    const syncSessionUser = async (
-      sessionUser: {
-        id: string;
-        email?: string;
-        email_confirmed_at?: string | null;
-        is_anonymous?: boolean;
-        user_metadata?: Record<string, any>;
-      } | null
-    ) => {
+    const syncSessionUser = async (sessionUser: SessionUser | null, accessToken?: string | null) => {
       try {
         if (sessionUser) {
-          setUser(await hydrateUser(sessionUser));
+          setUser(await hydrateUser(sessionUser, accessToken));
         } else {
           setUser(null);
         }
@@ -120,7 +127,7 @@ export function useAuthInit(
           return;
         }
 
-        await syncSessionUser(session?.user ?? null);
+        await syncSessionUser(session?.user ?? null, session?.access_token ?? null);
       } catch (error) {
         setError(error as Error);
         setLoading(false);
@@ -134,7 +141,7 @@ export function useAuthInit(
     } = supabase.auth.onAuthStateChange((_event, session) => {
       setLoading(true);
       window.setTimeout(() => {
-        void syncSessionUser(session?.user ?? null);
+        void syncSessionUser(session?.user ?? null, session?.access_token ?? null);
       }, 0);
     });
 
@@ -151,4 +158,3 @@ export function useAuth() {
   }
   return context;
 }
-
